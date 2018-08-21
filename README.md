@@ -39,7 +39,8 @@ From this signature Plasma operator deduces a sender, checks that the sender is 
 - V value, 1 byte, expected values 27, 28
 - R value, 32 bytes
 - S value, 32 bytes
-Signature is based on EthereumPersonalHash(block number || number of transactions || previous hash || merkle root), where || means concatenation. Values V, R, S are than concatenated to the header.
+
+Signature is based on EthereumPersonalHash(block number || number of transactions || previous hash || merkle root), where || means concatenation. Values V, R, S are then concatenated to the header.
 
 ### Block
 - Block header, as described above, 137 bytes
@@ -51,7 +52,6 @@ While some fields can be excessive, such block header can be submitted by anyone
 
 - Other transactions structure with nested RLP fields
 - Deposit transactions are declarative: new block with 1 transaction is not created automatically (although can be easily changed), but deposit record is created and can be withdrawn back to user if Plasma operator doesn't provide transaction of appropriate structure (referencing this deposit, having proper owner and amount).
-- "Slow" withdraw procedure user has to provide some collateral in case his withdraw will be challenged. If no challenge happened it's returned along with the value of UTXO being withdrawn.
 - Anyone(!) can send a header of the block to the main chain, so if block is assembled and available, but not yet pushed to the main chain, anyone can send a header on behalf of Plasma operator.
 
 ## Implemented functionality:
@@ -79,24 +79,25 @@ All basic challenges and potential "cheats" for operator or user should be now c
     - [x] should stop Plasma on funding without deposit
     - [x] should update total deposited amount for all tests above
     - [ ] should update amount pending exit for all tests above
-- [ ] Withdrawals (normal process)
+- [ ] Exits (normal process)
     - [x] should start withdraw with proper proof
     - [x] should not allow non-owner of transaction to start a withdraw of UTXO
     - [x] should respond to withdraw challenge
     - [x] should allow successful withdraw
     - [x] should require bond for withdraw start 
     - [ ] should return bond on successful withdraw
-    - [ ] should return bond and prevent withdraw if Plasma was stopped in the meantime
     - [ ] should update amount pending withdraw for all tests above
     - [ ] should update total amount deposited for all tests above
     - [x] should allow offer for buyout
     - [x] should allow accepting a buyout offer
     - [x] should allow returning funds for expired offer 
-- [ ] Exits (when Plasma is stopped)
-    - [x] should put withdraw in the quequ
-    - [x] should maintain priority in the queue
+- [ ] Limbo exits (when Plasma is stopped)
+    - [x] should allow to start a limbo exit
+    - [x] should require a collateral for each input
+    - [ ] should allow to join a limbo exit
+    - [ ] should maintain priority in the queue
     - [ ] should give the same priority for blocks that are older than 2 weeks
-    - [x] should respond to exit prevention challenge
+    - [ ] should respond to exit prevention challenge
     - [x] should allow successful exit
     - [ ] should update amount pending withdraw for all tests above
     - [ ] should update total amount deposited for all tests above
@@ -104,17 +105,12 @@ All basic challenges and potential "cheats" for operator or user should be now c
     - [x] Invalid transaction in block (unrealisable)
     - [x] should NOT stop on valid transaction (not malformed) in block
     - [x] Transaction in block references the future
-    - [x] Transaction references an output with tx number larger, than number in transaction in this UTXO block
-    - [x] Transaction has higher number that number of transactions in block
     - [x] Two transactions have the same number in block
     - [x] Transaction is malformed (balance breaking)
-    - [x] Transaction is malformed (invalid merge by Plasma owner)
     - [x] Double spend
     - [x] Spend without owner signature
     - [x] UTXO amount is not equal to input amount
     - [x] UTXO was successfully withdrawn and than spent in Plasma
-    - [x] Should have interactive challenge (show me the referenced input)
-    - [x] Should have interactive challenge with Plasma stop at the absence of challenge
 
 ## Contribution
 
