@@ -1,10 +1,3 @@
-
-const SafeMath       = artifacts.require('SafeMath');
-const PlasmaParent   = artifacts.require('PlasmaParent');
-const PriorityQueue  = artifacts.require('PriorityQueue');
-const BlockStorage = artifacts.require("PlasmaBlockStorage");
-const Challenger = artifacts.require("PlasmaChallenges");
-const PlasmaBuyouts = artifacts.require("PlasmaBuyouts");
 const util = require("util");
 const ethUtil = require('ethereumjs-util')
 const BN = ethUtil.BN;
@@ -15,15 +8,14 @@ const {addresses, keys} = require("./keys.js");
 const {createTransaction, parseTransactionIndex} = require("./createTransaction");
 const {createBlock, createMerkleTree} = require("./createBlock");
 const testUtils = require('./utils');
-
-console.log("Parent bytecode size = " + (PlasmaParent.bytecode.length -2)/2);
-console.log("Challenger bytecode size = " + (Challenger.bytecode.length -2)/2);
-// const Web3 = require("web3");
+const deploy = require("./deploy");
 
 const increaseTime = async function(addSeconds) {
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [addSeconds], id: 0})
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 1})
 }
+
+
 
 const {
     TxTypeFund, 
@@ -39,7 +31,10 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
     let plasma;
     let storage;
     let challenger;
-    let buyouts;
+    let exitProcessor;
+    let limboExitGame;
+    let firstHash;
+
     const operator = accounts[0];
 
     const alice    = addresses[2];
@@ -47,45 +42,38 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
     const bob      = addresses[3];
     const bobKey = keys[3];
     
-    let firstHash;
-
     beforeEach(async () => {
-        storage = await BlockStorage.new({from: operator})
-        queue  = await PriorityQueue.new({from: operator})
-        plasma = await PlasmaParent.new(queue.address, storage.address, {from: operator, value: "10000000000000000000"})
-        await storage.setOwner(plasma.address, {from: operator})
-        await queue.setOwner(plasma.address, {from: operator})
-        buyouts = await PlasmaBuyouts.new(queue.address, storage.address, {from: operator});
-        challenger = await Challenger.new(queue.address, storage.address, {from: operator});
-        await plasma.setDelegates(challenger.address, buyouts.address, {from: operator})
-        await plasma.setOperator(operatorAddress, 2, {from: operator});
-        const canSignBlocks = await storage.canSignBlocks(operator);
-        assert(canSignBlocks);
-        
-        const buyoutsAddress = await plasma.buyoutsContract();
-        assert(buyoutsAddress == buyouts.address);
-
-        const challengesAddress = await plasma.challengesContract();
-        assert(challengesAddress == challenger.address);
-
-        challenger = Challenger.at(plasma.address); // instead of merging the ABI
-        buyouts = PlasmaBuyouts.at(plasma.address);
-        firstHash = await plasma.hashOfLastSubmittedBlock();
+        const result = await deploy(operator, operatorAddress);
+        ({plasma, firstHash, challenger, limboExitGame, exitProcessor, queue, storage} = result);
     })
 
-    it('Simulate exit procedure', async () => {
-        // first we fund Alice with something
+    it('Simulate exit procedure for deposit transactions', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
         
-        await plasma.deposit({from: alice, value: "10000000000000"})
+        // do deposits
+
+        await plasma.deposit({from: alice, value: "100"})
         let totalDeposited = await plasma.totalAmountDeposited();
-        assert(totalDeposited.toString(10) === "10000000000000");
+        assert(totalDeposited.toString(10) === "100");
+        let depositRecordAlice = await plasma.depositRecords(0);
+        assert(depositRecordAlice[0] == alice);
+        assert(depositRecordAlice[1].toString(10) === "1");
+        assert(depositRecordAlice[3].toString(10) === "100");
+
+        await plasma.deposit({from: bob, value: "200"})
+        totalDeposited = await plasma.totalAmountDeposited();
+        assert(totalDeposited.toString(10) === "300");
+        let depositRecordBob = await plasma.depositRecords(1);
+        assert(depositRecordBob[0] == bob);
+        assert(depositRecordBob[1].toString(10) === "1");
+        assert(depositRecordBob[3].toString(10) === "200");
+
         let tx = createTransaction(TxTypeFund, 0, 
             [{
                 blockNumber: 0,
                 txNumberInBlock: 0,
                 outputNumberInTransaction: 0,
-                amount: 1
+                amount: 0
             }],
             [{
                 amount: 100,
@@ -111,7 +99,7 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
                 blockNumber: 0,
                 txNumberInBlock: 0,
                 outputNumberInTransaction: 0,
-                amount: 2
+                amount: 1
             }],
             [{
                 amount: 200,
@@ -176,47 +164,38 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
         lastBlockNumber = await plasma.lastBlockNumber();
 
         bl = await storage.blocks(3);
-        assert(bl[2] == ethUtil.bufferToHex(block.header.merkleRootHash));
-        // function proveDoubleSpend(uint32 _plasmaBlockNumber1, //references and proves transaction number 1
-        //     uint32 _plasmaTxNumInBlock1,
-        //     uint8 _inputNumber1,
-        //     bytes _plasmaTransaction1,
-        //     bytes _merkleProof1,
-        //     uint32 _plasmaBlockNumber2, //references and proves transaction number 2
-        //     uint32 _plasmaTxNumInBlock2,
-        //     uint8 _inputNumber2,
-        //     bytes _plasmaTransaction2,
-        //     bytes _merkleProof2)
-                            
-        const balanceBefore = await web3.eth.getBalance(operator);
-        submissionReceipt = await challenger.proveDoubleSpend(
-            3, 0, ethUtil.bufferToHex(reencodedTX2), ethUtil.bufferToHex(proof2),
-            3, 0, ethUtil.bufferToHex(reencodedTX3), ethUtil.bufferToHex(proof3));
-        const plasmaIsStopped = await plasma.plasmaErrorFound();
-        assert(plasmaIsStopped);
-        const balanceAfter = await web3.eth.getBalance(operator);
+        assert(bl[2] == ethUtil.bufferToHex(block.header.merkleRootHash));                            
+        // const balanceBefore = await web3.eth.getBalance(operator);
+        // submissionReceipt = await challenger.proveDoubleSpend(
+        //     3, 0, ethUtil.bufferToHex(reencodedTX2), ethUtil.bufferToHex(proof2),
+        //     3, 0, ethUtil.bufferToHex(reencodedTX3), ethUtil.bufferToHex(proof3));
+        // const plasmaIsStopped = await plasma.plasmaErrorFound();
+        // assert(plasmaIsStopped);
+        // const balanceAfter = await web3.eth.getBalance(operator);
 
-        assert(balanceAfter.sub(balanceBefore).gt(new web3.BigNumber("4900000000000000000"))); // we receive only half of the collateral
+        // assert(balanceAfter.sub(balanceBefore).gt(new web3.BigNumber("4900000000000000000"))); // we receive only half of the collateral
 
         // now we should be able to exit
-
-        submissionReceipt = await plasma.startWithdraw(2, 0, ethUtil.bufferToHex(reencodedTXBob), ethUtil.bufferToHex(proofBob), {from: bob, value: withdrawCollateral})
-        let withdrawIndexBob = submissionReceipt.logs[0].args._withdrawIndex;
-        let withdrawRecordBob = await plasma.withdrawRecords(withdrawIndexBob);
-        assert(withdrawRecordBob[8].toString(10) === "200");
+        submissionReceipt = await exitProcessor.startExit(2, 0, ethUtil.bufferToHex(reencodedTXBob), ethUtil.bufferToHex(proofBob), {from: bob, value: withdrawCollateral})
+        let withdrawIndexBob = submissionReceipt.logs[1].args._index;
+        let withdrawRecordBob = await plasma.publishedUTXOs(withdrawIndexBob);
+        assert(withdrawRecordBob[9].toString(10) === "200");
         assert(withdrawRecordBob[7] === bob);
 
-        submissionReceipt = await plasma.startWithdraw(1, 0, ethUtil.bufferToHex(reencodedTXAlice), ethUtil.bufferToHex(proofAlice), {from: alice, value: withdrawCollateral})
-        let withdrawIndexAlice = submissionReceipt.logs[0].args._withdrawIndex;
-        let withdrawRecordAlice = await plasma.withdrawRecords(withdrawIndexAlice);
-        assert(withdrawRecordAlice[8].toString(10) === "100");
+        submissionReceipt = await exitProcessor.startExit(1, 0, ethUtil.bufferToHex(reencodedTXAlice), ethUtil.bufferToHex(proofAlice), {from: alice, value: withdrawCollateral})
+        let withdrawIndexAlice = submissionReceipt.logs[1].args._index;
+        let withdrawRecordAlice = await plasma.publishedUTXOs(withdrawIndexAlice);
+        assert(withdrawRecordAlice[9].toString(10) === "100");
         assert(withdrawRecordAlice[7] === alice);
+
+        // priority is effectively the same, so BOB comes first as sends first
 
 
         let size = await queue.currentSize();
         assert(size.toString(10) === "2");
         let minimalItem = await queue.getMin();
-        assert(minimalItem.eq(withdrawIndexAlice));
+        assert(minimalItem[0].toString(10) === "1");
+        assert((new BN(ethUtil.toBuffer(minimalItem[1]))).toString(10) === withdrawIndexBob.toString(10));
 
         const delay = await plasma.ExitDelay();
         await increaseTime(delay.toNumber() + 1);
@@ -227,7 +206,8 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
         assert(size.toString(10) === "1");
 
         minimalItem = await queue.getMin();
-        assert(minimalItem.eq(withdrawIndexBob));
+        assert(minimalItem[0].toString(10) === "1");
+        assert((new BN(ethUtil.toBuffer(minimalItem[1]))).toString(10) === withdrawIndexAlice.toString(10));
 
         submissionReceipt = await plasma.finalizeExits(1);
         
@@ -236,10 +216,10 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
 
     })
 
-    it('should allow offer for buyout', async () => {
+    it('should send an offer and accept it', async () => {
         // deposit to prevent stopping
 
-        await plasma.deposit({from: alice, value: "1000000000"})
+        await plasma.deposit({from: alice, value: "100"})
 
         // first we fund Alice with something
         const withdrawCollateral = await plasma.WithdrawCollateral();
@@ -249,7 +229,7 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
                 blockNumber: 0,
                 txNumberInBlock: 0,
                 outputNumberInTransaction: 0,
-                amount: 1
+                amount: 0
             }],
             [{
                 amount: 100,
@@ -258,20 +238,7 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
                 operatorKey
         )
 
-        let tx2 = createTransaction(TxTypeFund, 1, 
-            [{
-                blockNumber: 0,
-                txNumberInBlock: 0,
-                outputNumberInTransaction: 0,
-                amount: 2
-            }],
-            [{
-                amount: 100,
-                to: alice
-            }],
-                operatorKey
-        )
-        let block = createBlock(1, 2, firstHash, [tx, tx2],  operatorKey)
+        let block = createBlock(1, 2, firstHash, [tx],  operatorKey)
         const reencodedTX = tx.serialize();
         const proof = Buffer.concat(block.merkleTree.getProof(0, true));
         let blockArray = block.serialize();
@@ -295,37 +262,50 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
 
         // should be in principle able to withdraw an output before the procedure
 
-        submissionReceipt = await plasma.startWithdraw(1, 0, ethUtil.bufferToHex(reencodedTX),
+        submissionReceipt = await exitProcessor.startExit(1, 0, ethUtil.bufferToHex(reencodedTX),
         ethUtil.bufferToHex(proof), {from: alice, value: withdrawCollateral});
 
-        let withdrawIndex = submissionReceipt.logs[0].args._withdrawIndex;
-        let withdrawRecord = await plasma.withdrawRecords(withdrawIndex);
+        let withdrawIndex = submissionReceipt.logs[1].args._index;
+        let withdrawRecord = await plasma.publishedUTXOs(withdrawIndex);
 
-        assert(withdrawRecord[8].toString(10) === "100");
+        assert(withdrawRecord[9].toString(10) === "100");
         assert(withdrawRecord[7] === alice);
-        assert(withdrawRecord[3].toString(10) === "1");
+        assert(withdrawRecord[3]);
+        assert(withdrawRecord[4]);
+
+
         //now lets offer a buyoyt for half of the amount
         // offerOutputBuyout(uint256 _withdrawIndex)
-        submissionReceipt = await buyouts.offerOutputBuyout(withdrawIndex, bob, {from: bob, value: 50})
-
-        let offer = await plasma.withdrawBuyoutOffers(withdrawIndex);
+        submissionReceipt = await plasma.offerOutputBuyout(withdrawIndex, bob, {from: bob, value: 50})
+        assert(submissionReceipt.logs.length == 1);
+        let offer = await plasma.exitBuyoutOffers(withdrawIndex);
         assert(offer[1] === bob);
         assert(offer[0].toString(10) === "50");
+        assert(!offer[2]);
 
-        submissionReceipt = await buyouts.acceptBuyoutOffer(withdrawIndex, {from: alice})
+        let oldBalanceAlice = await web3.eth.getBalance(alice);
+        submissionReceipt = await plasma.acceptBuyoutOffer(withdrawIndex, {from: alice, gasPrice: 0});
+        let newBalanceAlice = await web3.eth.getBalance(alice);
+
+        assert(newBalanceAlice.gt(oldBalanceAlice));
+
+        withdrawRecord = await plasma.publishedUTXOs(withdrawIndex);
+        assert(withdrawRecord[8] === bob);
         
-        withdrawRecord = await plasma.withdrawRecords(withdrawIndex);
-        assert(withdrawRecord[8].toString(10) === "100");
-        assert(withdrawRecord[7] === bob);
-        
-        const delay = await plasma.WithdrawDelay();
+        const delay = await plasma.ExitDelay();
         await increaseTime(delay.toNumber() + 1);
 
-        submissionReceipt = await plasma.finalizeWithdraw(withdrawIndex, {from: bob});
-        let status = await plasma.withdrawRecords(withdrawIndex);
-        assert(status[3].toNumber() === 3);
+        let oldBalanceBob = await web3.eth.getBalance(bob);
+        submissionReceipt = await plasma.finalizeExits(1, {from: operator});
+        let newBalanceBob = await web3.eth.getBalance(bob);
+        assert(newBalanceBob.gt(oldBalanceBob));
 
+        oldBalanceAlice = newBalanceAlice
+        newBalanceAlice = await web3.eth.getBalance(alice);
+        assert(newBalanceAlice.eq(oldBalanceAlice));
     })
+
+    return
 
     it('should allow returning funds for expired offer', async () => {
         // deposit to prevent stopping
@@ -407,10 +387,10 @@ contract('PlasmaParent buyout procedure', async (accounts) => {
         assert(withdrawRecord[8].toString(10) === "100");
         assert(withdrawRecord[7] === alice);
         
-        const delay = await plasma.WithdrawDelay();
+        const delay = await plasma.ExitDelay();
         await increaseTime(delay.toNumber() + 1);
 
-        submissionReceipt = await plasma.finalizeWithdraw(withdrawIndex, {from: alice});
+        submissionReceipt = await plasma.finalizeExits(1, {from: alice});
 
         submissionReceipt = await buyouts.returnExpiredBuyoutOffer(withdrawIndex, {from: bob})
         offer = await plasma.withdrawBuyoutOffers(withdrawIndex);

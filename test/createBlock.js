@@ -2,6 +2,7 @@ const Block = require("../lib/Block/RLPblock");
 const ethUtil = require("ethereumjs-util");
 const BN = ethUtil.BN;
 const MerkleTools = require("../lib/merkle-tools");
+const {EmptyTransactionBuffer} = require("../lib/Tx/RLPtxWithSignature")
 
 function createBlock(blockNumber, numberOfTransactions, previousHash, transactions, privateKey) {
     const params = {
@@ -25,7 +26,7 @@ function createMerkleTree(dataArray) {
         const txHash = ethUtil.hashPersonalMessage(dataArray[i]);
         merkleTree.addLeaf(txHash);
     }  
-    merkleTree.makeTree(false);
+    merkleTree.makePlasmaTree(EmptyTransactionBuffer);
     return merkleTree
 }
 
