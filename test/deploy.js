@@ -2,8 +2,8 @@ const PlasmaParent   = artifacts.require('PlasmaParent');
 const PriorityQueue  = artifacts.require('PriorityQueue');
 const BlockStorage = artifacts.require("PlasmaBlockStorage");
 const Challenger = artifacts.require("PlasmaChallenges");
-const ExitProcessor = artifacts.require("PlasmaExitsProcessor"); // !!!!!!
-const LimboExitGame = Challenger; // !!!!!!
+const ExitProcessor = artifacts.require("PlasmaExitsProcessor"); 
+const LimboExitGame = artifacts.require("PlasmaExitGame");
 const assert = require("assert");
 
 console.log("Parent bytecode size = " + (PlasmaParent.bytecode.length -2)/2);

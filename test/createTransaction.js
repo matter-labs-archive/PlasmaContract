@@ -3,7 +3,6 @@ TxTypeFund,
 TxTypeMerge, 
 TxTypeSplit} = require("../lib/Tx/RLPtx.js");
 
-const {PlasmaTransactionWithNumberAndSignature} = require("../lib/Tx/RLPtxWithNumberAndSignature");
 const {PlasmaTransactionWithSignature} = require("../lib/Tx/RLPtxWithSignature");
 
 const {TransactionInput} = require("../lib/Tx/RLPinput");

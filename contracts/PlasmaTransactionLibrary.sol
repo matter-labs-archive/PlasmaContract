@@ -88,32 +88,32 @@ library PlasmaTransactionLibrary {
         return (false, 0);
     }
 
-    function plasmaTransactionFromBytes(bytes _rawTX) internal view returns (PlasmaTransaction memory TX) {
-        RLP.RLPItem memory item = _rawTX.toRLPItem();
-        if (!item._validate()) {
-            return constructEmptyTransaction();
-        }
-        if (!item.isList()) {
-            return constructEmptyTransaction();
-        }
-        uint256 numItems = item.items();
-        if (numItems != 2) {
-            return constructEmptyTransaction();
-        }
-        RLP.Iterator memory iter = item.iterator();
-        item = iter.next();
-        (uint256 numInBlock, bool valid) = item.toUint(TxNumberLength);
-        if (!valid) {
-            return constructEmptyTransaction();
-        }
-        item = iter.next();
-        TX = signedPlasmaTransactionFromRLPItem(item);
-        if (!TX.isWellFormed) {
-            return constructEmptyTransaction();
-        }
-        TX.txNumberInBlock = uint32(numInBlock);
-        return TX;
-    }
+    // function plasmaTransactionFromBytes(bytes _rawTX) internal view returns (PlasmaTransaction memory TX) {
+    //     RLP.RLPItem memory item = _rawTX.toRLPItem();
+    //     if (!item._validate()) {
+    //         return constructEmptyTransaction();
+    //     }
+    //     if (!item.isList()) {
+    //         return constructEmptyTransaction();
+    //     }
+    //     uint256 numItems = item.items();
+    //     if (numItems != 2) {
+    //         return constructEmptyTransaction();
+    //     }
+    //     RLP.Iterator memory iter = item.iterator();
+    //     item = iter.next();
+    //     (uint256 numInBlock, bool valid) = item.toUint(TxNumberLength);
+    //     if (!valid) {
+    //         return constructEmptyTransaction();
+    //     }
+    //     item = iter.next();
+    //     TX = signedPlasmaTransactionFromRLPItem(item);
+    //     if (!TX.isWellFormed) {
+    //         return constructEmptyTransaction();
+    //     }
+    //     TX.txNumberInBlock = uint32(numInBlock);
+    //     return TX;
+    // }
 
     function signedPlasmaTransactionFromBytes(bytes _rawLimboTX) internal view returns (PlasmaTransaction memory TX) {
         RLP.RLPItem memory item = _rawLimboTX.toRLPItem();

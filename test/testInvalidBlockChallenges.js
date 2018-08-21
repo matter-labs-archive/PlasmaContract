@@ -4,7 +4,6 @@ const PlasmaParent   = artifacts.require('PlasmaParent');
 const PriorityQueue  = artifacts.require('PriorityQueue');
 const BlockStorage = artifacts.require("PlasmaBlockStorage");
 const Challenger = artifacts.require("PlasmaChallenges");
-const PlasmaBuyouts = artifacts.require("PlasmaBuyouts");
 const util = require("util");
 const ethUtil = require('ethereumjs-util')
 const BN = ethUtil.BN;
@@ -37,7 +36,10 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
     let plasma;
     let storage;
     let challenger;
-    let buyouts;
+    let exitProcessor;
+    let limboExitGame;
+    let firstHash;
+
     const operator = accounts[0];
 
     const alice    = addresses[2];
@@ -45,30 +47,9 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
     const bob      = addresses[3];
     const bobKey = keys[3];
     
-    let firstHash;
-
     beforeEach(async () => {
-        storage = await BlockStorage.new({from: operator})
-        queue  = await PriorityQueue.new({from: operator})
-        plasma = await PlasmaParent.new(queue.address, storage.address, {from: operator})
-        await storage.setOwner(plasma.address, {from: operator})
-        await queue.setOwner(plasma.address, {from: operator})
-        buyouts = await PlasmaBuyouts.new(queue.address, storage.address, {from: operator});
-        challenger = await Challenger.new(queue.address, storage.address, {from: operator});
-        await plasma.setDelegates(challenger.address, buyouts.address, {from: operator})
-        await plasma.setOperator(operatorAddress, 2, {from: operator});
-        const canSignBlocks = await storage.canSignBlocks(operator);
-        assert(canSignBlocks);
-        
-        const buyoutsAddress = await plasma.buyoutsContract();
-        assert(buyoutsAddress == buyouts.address);
-
-        const challengesAddress = await plasma.challengesContract();
-        assert(challengesAddress == challenger.address);
-
-        challenger = Challenger.at(plasma.address); // instead of merging the ABI
-        buyouts = PlasmaBuyouts.at(plasma.address);
-        firstHash = await plasma.hashOfLastSubmittedBlock();
+        const result = await deploy(operator, operatorAddress);
+        ({plasma, firstHash, challenger, limboExitGame, exitProcessor, queue, storage} = result);
     })
 
     it('should stop on invalid transaction (malformed) in block - invalid amount', async () => {
