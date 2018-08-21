@@ -1,0 +1,26 @@
+{
+  "name": "PlasmaParentContract",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy-rinkeby": "truffle migrate --network rinkeby",
+    "test": "node $NODE_DEBUG_OPTION node_modules/.bin/truffle test"
+  },
+  "dependencies": {
+    "dotenv": "^5.0.1",
+    "ethereumjs-util": "^5.2.0",
+    "is-buffer": "^2.0.2",
+    "js-sha3": "^0.7.0",
+    "lodash": "^4.17.10",
+    "mocha": "^5.2.0",
+    "truffle": "^4.1.14",
+    "truffle-core": "^4.1.14",
+    "truffle-hdwallet-provider": "0.0.6",
+    "truffle-wallet-provider": "0.0.5",
+    "web3": "^1.0.0-beta.35"
+  },
+  "devDependencies": {
+    "truffle-artifactor": "^3.0.7",
+    "truffle-contract": "^3.0.6",
+    "truffle-test-utils": "0.1.0"
+  }
+}

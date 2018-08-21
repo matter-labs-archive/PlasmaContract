@@ -1,0 +1,32 @@
+image: node:9.11.1
+
+cache:
+  paths:
+    - node_modules
+    - /usr/local/lib/node_modules
+
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+test:
+  stage: test
+  script:
+    - npm install -g truffle
+    - cd /usr/local/lib/node_modules/truffle && npm install solc@0.4.24 && cd -
+    - npm install
+    - ./node_modules/.bin/ganache-cli --mnemonic='candy maple cake sugar pudding cream honey rich smooth crumble sweet treat' --gasLimit=7e7 > /dev/null &
+    - truffle test
+
+deploy-rinkeby:
+  stage: deploy
+  when: manual
+  script:
+    - npm install -g truffle
+    - cd /usr/local/lib/node_modules/truffle && npm install solc@0.4.24 && cd -
+    - npm install
+    - truffle migrate --network rinkeby
+  # - node helpers/details.js
+  artifacts:
+    paths:
+    # - build
+      - build/details
