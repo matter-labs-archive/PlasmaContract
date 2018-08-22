@@ -62,7 +62,9 @@ module.exports = function(deployer, network, accounts) {
         // due to async contract address is not saved in not saved in json by truffle
         // so we need to generate details file from within migration
 	    let details = {error: false, address: parent.address, abi: mergedABI};
-	    fs.writeFileSync("build/details", JSON.stringify(details));
+        fs.writeFileSync("build/details", JSON.stringify(details));
+        let abiOnly = {abi: mergedABI}
+        fs.writeFileSync("build/abi", JSON.stringify(abiOnly));
 	    console.log('Complete. Contract address: ' + parent.address);
     })();
 };
