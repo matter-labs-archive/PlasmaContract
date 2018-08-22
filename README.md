@@ -122,9 +122,7 @@ Alex Vlasov, [@shamatar](https://github.com/shamatar),  alex.m.vlasov@gmail.com
 
 ## Further work
 
-Making a hybrid of Minimal Viable Plasma and Plasma Cash to use separate tree of all transactions ever spent, and use this tree when withdraw procedure is executed.
-
-Trial usage of invariant that sum of all unchallenged pending withdrawals should be less than or equal to a total balance of Plasma contract. It will prevent the case of block withholding by Plasma operator - by trying to do a double spend or invalid ownership transfer and than to withhold few blocks to prevent a global stop he will most likely exceed such limitation.
+Make optimizations for reduced gas costs for most of the functions.
 
 ## License
 
