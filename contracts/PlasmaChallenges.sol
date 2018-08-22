@@ -544,7 +544,7 @@ contract PlasmaChallenges {
 // Convenience functions
 
     function isWellFormedTransaction(bytes _plasmaTransaction) public view returns (bool isWellFormed) {
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.plasmaTransactionFromBytes(_plasmaTransaction);
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
         return isWellFormedDecodedTransaction(TX);
     }
 
