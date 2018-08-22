@@ -4,7 +4,7 @@ const PriorityQueue  = artifacts.require('PriorityQueue');
 const BlockStorage = artifacts.require("PlasmaBlockStorage");
 const Challenger = artifacts.require("PlasmaChallenges");
 const ExitProcessor = artifacts.require("PlasmaExitsProcessor");
-const LimboExitGame = Challenger;
+const LimboExitGame = artifacts.require("PlasmaExitGame");
 const assert = require('assert');
 const _ = require('lodash');
 
