@@ -1,8 +1,9 @@
 .env
-build
+/build/contracts
 node_modules
 .vscode
 .DS_Store
 .idea
-!build/.keep
-!build/abi
+!/build/.keep
+!/build/abi
+build/details
