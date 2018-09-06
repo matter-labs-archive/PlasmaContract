@@ -1,9 +1,3 @@
-
-const SafeMath       = artifacts.require('SafeMath');
-const PlasmaParent   = artifacts.require('PlasmaParent');
-const PriorityQueue  = artifacts.require('PriorityQueue');
-const BlockStorage = artifacts.require("PlasmaBlockStorage");
-const Challenger = artifacts.require("PlasmaChallenges");
 const util = require("util");
 const ethUtil = require('ethereumjs-util');
 // const BN = ethUtil.BN;
@@ -11,15 +5,16 @@ var BN;
 const t = require('truffle-test-utils');
 t.init();
 const expectThrow = require("../helpers/expectThrow");
-const {addresses, keys} = require("./keys.js");
+const {addresses, keys} = require("./keys");
 const {createTransaction} = require("./createTransaction");
 const {createBlock, createMerkleTree} = require("./createBlock");
 const testUtils = require('./utils');
+const deploy = require("./deploy");
 
 const {
     TxTypeFund,
     TxTypeMerge,
-    TxTypeSplit} = require("../lib/Tx/RLPtx.js");
+    TxTypeSplit} = require("../lib/Tx/RLPtx");
 
 // const Web3 = require("web3");
 

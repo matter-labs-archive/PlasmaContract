@@ -130,35 +130,23 @@ contract PlasmaExitsProcessor {
     event TransactionIsPublished(uint64 indexed _index);
 // end of storage declarations --------------------------- 
 
-    constructor (address _priorityQueue, address _blockStorage) public payable {
-        require(_priorityQueue != address(0));
-        require(_blockStorage != address(0));
-        exitQueue = PriorityQueueInterface(_priorityQueue);
-        blockStorage = PlasmaBlockStorageInterface(_blockStorage);
-        operatorsBond = msg.value;
-    }
-
-    function addTotalDeposited(int256 _am) internal {
-        totalAmountDeposited = totalAmountDeposited + _am;
-    }
-
-    function addTotalPendingExit(int256 _am) internal {
-        amountPendingExit = amountPendingExit + _am;
-    }
-
-    function incrementWeekOldCounter() public {
-        // require(!plasmaErrorFound);
+    modifier adjustsTime() {
         blockStorage.incrementWeekOldCounter();
+        _;
+    }
+
+    constructor () public payable {
     }
 
 //-----------------------------------
 
     //references and proves ownership on output of original transaction
-    function startExit(
+    function startExit (
         uint32 _plasmaBlockNumber, // block with the transaction
         uint8 _outputNumber,    // output being exited
         bytes _plasmaTransaction, // transaction itself
         bytes _merkleProof) // proof
+    adjustsTime
     public payable returns(bool success) {
         uint72[] memory detachedByInputs;
         uint72[] memory detachedByOutputs;

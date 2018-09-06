@@ -4,7 +4,7 @@ const BN = ethUtil.BN;
 const t = require('truffle-test-utils')
 t.init()
 const expectThrow = require("../helpers/expectThrow");
-const {addresses, keys} = require("./keys.js");
+const {addresses, keys} = require("./keys");
 const {createTransaction, parseTransactionIndex} = require("./createTransaction");
 const {createBlock, createMerkleTree} = require("./createBlock");
 const testUtils = require('./utils');
@@ -18,7 +18,7 @@ const increaseTime = async function(addSeconds) {
 const {
     TxTypeFund, 
     TxTypeMerge, 
-    TxTypeSplit} = require("../lib/Tx/RLPtx.js");
+    TxTypeSplit} = require("../lib/Tx/RLPtx");
 
 contract('PlasmaParent exit procedure', async (accounts) => {
 
@@ -50,8 +50,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
         
         await plasma.deposit({from: alice, value: "10000000000000"})
-        let totalDeposited = await plasma.totalAmountDeposited();
-        assert(totalDeposited.toString(10) === "10000000000000");
+
         let tx = createTransaction(TxTypeFund, 0, 
             [{
                 blockNumber: 0,
