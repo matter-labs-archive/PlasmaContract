@@ -311,6 +311,9 @@ contract PlasmaParent {
         PlasmaTransactionLibrary.PlasmaTransaction memory originalTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_originalTransaction);
         PlasmaTransactionLibrary.TransactionInput memory txInput = TX.inputs[_inputNumber];
         PlasmaTransactionLibrary.TransactionInput memory originalTxInput = originalTX.inputs[_originalInputNumber];
+        // to prevent challenging by the same transaction
+        require(exitRecord.blockNumber != _plasmaBlockNumber || exitRecord.transactionNumber != TX.txNumberInBlock);
+        // check the validity, that inputs match
         require(txInput.blockNumber == originalTxInput.blockNumber);
         require(txInput.txNumberInBlock == originalTxInput.txNumberInBlock);
         require(txInput.outputNumberInTX == originalTxInput.outputNumberInTX);
