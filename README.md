@@ -112,6 +112,15 @@ All basic challenges and potential "cheats" for operator or user should be now c
     - [x] UTXO amount is not equal to input amount
     - [x] UTXO was successfully withdrawn and than spent in Plasma
 
+## Getting started
+
+### Download dependecies:
+
+```
+git submodule init
+git submodule update --recursive
+```
+
 ## Contribution
 
 Everyone is welcome to spot mistakes in the logic of this contract as number of provided functions is substantial. If you find a potential error or security loophole (one that would allow Plasma operator or user to break the normal operation and not being caught) - please open an issue.
