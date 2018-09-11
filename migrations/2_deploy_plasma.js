@@ -3,14 +3,15 @@ const PlasmaParent   = artifacts.require('PlasmaParent');
 const PriorityQueue  = artifacts.require('PriorityQueue');
 const BlockStorage = artifacts.require("PlasmaBlockStorage");
 const Challenger = artifacts.require("PlasmaChallenges");
-const ExitProcessor = artifacts.require("PlasmaExitsProcessor");
-const LimboExitGame = artifacts.require("PlasmaExitGame");
+// const BuyoutProcessor = artifacts.require("PlasmaBuyoutProcessor");
+// const LimboExitGame = artifacts.require("PlasmaLimboExitGame");
 const assert = require('assert');
 const _ = require('lodash');
 
 const blockSignerAddress = "0x627306090abab3a6e1400e9345bc60c78a8bef57"
 
 module.exports = function(deployer, network, accounts) {
+    return
     const operator = accounts[0];
     (async () => {
         await deployer.deploy(BlockStorage, {from: operator});
@@ -25,27 +26,24 @@ module.exports = function(deployer, network, accounts) {
         await storage.setOwner(parent.address,{from: operator});
         await queue.setOwner(parent.address, {from: operator});
 
-        await deployer.deploy(ExitProcessor, queue.address, storage.address, {from: operator});
-        let exitProcessor = await ExitProcessor.deployed();
+        await deployer.deploy(BuyoutProcessor, {from: operator});
+        let buyoutProcessor = await BuyoutProcessor.deployed();
 
-        await deployer.deploy(Challenger, queue.address, storage.address, {from: operator});
+        await deployer.deploy(Challenger, {from: operator});
         let challenger = await Challenger.deployed();
 
-        await deployer.deploy(LimboExitGame, queue.address, storage.address, {from: operator});
+        await deployer.deploy(LimboExitGame, {from: operator});
         let limboExitGame = await LimboExitGame.deployed();
 
-        // setDelegates(address _exitProcessor, address _challenger, address _limboExit) 
-        await parent.setDelegates(exitProcessor.address, challenger.address, limboExitGame.address, {from: operator})
+        // setDelegates(address _buyouts, address _challenger, address _limboExit) 
+        await parent.setDelegates(buyoutProcessor.address, challenger.address, limboExitGame.address, {from: operator})
         await parent.setOperator(blockSignerAddress, 2, {from: operator});
 
         const canSignBlocks = await storage.canSignBlocks(blockSignerAddress);
         assert(canSignBlocks);
 
-        // address public challengesContract;
-        // address public limboExitContract;
-        // address public exitProcessorContract;
-        const exitProcessorAddress = await parent.exitProcessorContract();
-        assert(exitProcessorAddress === exitProcessor.address);
+        const buyoutProcessorAddress = await parent.buyoutProcessorContract();
+        assert(buyoutProcessorAddress === exitProcessor.address);
 
         const limboExitsAddress = await parent.limboExitContract();
         assert(limboExitsAddress === limboExitGame.address);
@@ -54,11 +52,11 @@ module.exports = function(deployer, network, accounts) {
         assert(challengesAddress === challenger.address);
 
         let parentAbi = parent.abi;
-        let exitProcessorAbi = exitProcessor.abi;
+        let buyoutAbi = buyoutProcessor.abi;
         let challengerAbi = challenger.abi;
         let limboExitAbi = limboExitGame.abi;
 
-        const mergedABI = _.uniqBy([...parentAbi, ...exitProcessorAbi, ...challengerAbi, ...limboExitAbi], a => a.name || a.type);
+        const mergedABI = _.uniqBy([...parentAbi, ...buyoutAbi, ...challengerAbi, ...limboExitAbi], a => a.name || a.type);
         // due to async contract address is not saved in not saved in json by truffle
         // so we need to generate details file from within migration
 	    let details = {error: false, address: parent.address, abi: mergedABI};

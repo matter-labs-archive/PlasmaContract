@@ -3,10 +3,10 @@ pragma solidity ^0.4.24;
 import {PlasmaTransactionLibrary} from "./PlasmaTransactionLibrary.sol";
 import {PlasmaBlockStorageInterface} from "./PlasmaBlockStorage.sol";
 import {PriorityQueueInterface} from "./PriorityQueue.sol";
+import {StructuresLibrary} from "./Structures.sol";
+import {SafeMath} from "./SafeMath.sol";
 
 contract PlasmaChallenges {
-    using PlasmaTransactionLibrary for PlasmaTransactionLibrary.PlasmaTransaction;
-
 // begining of storage declaration
 
     bool public plasmaErrorFound;
@@ -17,20 +17,17 @@ contract PlasmaChallenges {
     PlasmaBlockStorageInterface public blockStorage;
     address public challengesContract;
     address public limboExitContract;
-    address public exitProcessorContract;
+    address public buyoutProcessorContract;
     address public owner = msg.sender;
-
-    int256 public totalAmountDeposited;
-    int256 public amountPendingExit;
 
     uint256 public depositCounter;
 
     uint256 public DepositWithdrawCollateral = 50000000000000000;
     uint256 public WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
-    uint256 public constant InputChallangesDelay = (168 hours);
-    uint256 public constant OutputChallangesDelay = (168 hours);
-    uint256 public constant ExitDelay = (336 hours);
+    uint256 public constant InputChallangesDelay = (72 hours);
+    uint256 public constant OutputChallangesDelay = (72 hours);
+    uint256 public constant ExitDelay = (144 hours);
 
     uint256 constant TxTypeNull = 0;
     uint256 constant TxTypeSplit = 1;
@@ -45,7 +42,6 @@ contract PlasmaChallenges {
     uint8 constant DepositStatusWithdrawCompleted = 3; // used has withdrawn a deposit
     uint8 constant DepositStatusDepositConfirmed = 4; // a transaction with a deposit was posted
 
-
     struct DepositRecord {
         address from;
         uint8 status;
@@ -53,13 +49,6 @@ contract PlasmaChallenges {
         uint256 amount;
         uint256 withdrawStartedAt;
     }
-
-    event ErrorFoundEvent(uint256 indexed _lastValidBlockNumber);
-
-    event DepositEvent(address indexed _from, uint256 indexed _amount, uint256 indexed _depositIndex);
-    event DepositWithdrawStartedEvent(uint256 indexed _depositIndex);
-    event DepositWithdrawChallengedEvent(uint256 indexed _depositIndex);
-    event DepositWithdrawCompletedEvent(uint256 indexed _depositIndex);
 
     mapping(uint256 => DepositRecord) public depositRecords;
     mapping(address => uint256[]) public allDepositRecordsForUser;
@@ -70,82 +59,42 @@ contract PlasmaChallenges {
         bool accepted;
     }
 
-    event ExitStartedEvent(address indexed _from,
-                            uint72 indexed _priority,
-                            uint72 indexed _index);
-    event LimboExitStartedEvent(address indexed _from,
-                            uint72 indexed _priority,
-                            bytes22 indexed _partialHash);
-    event WithdrawBuyoutOffered(uint256 indexed _withdrawIndex,
-                                address indexed _from,
-                                uint256 indexed _buyoutAmount);
-    event WithdrawBuyoutAccepted(uint256 indexed _withdrawIndex,
-                                address indexed _from);    
-
-    mapping(address => uint256[]) public allExitsForUser;
-    mapping(uint72 => ExitBuyoutOffer) public exitBuyoutOffers;
+    mapping(address => bytes22[]) public allExitsForUser;
+    mapping(bytes22 => ExitBuyoutOffer) public exitBuyoutOffers;
 
     uint8 constant UTXOstatusNull = 0;
     uint8 constant UTXOstatusUnspent = 1;
     uint8 constant UTXOstatusSpent = 2;
 
-    struct UTXO {
-        uint160 spendingTransactionIndex;
-        uint8 utxoStatus;
-        bool isLinkedToLimbo;
-        bool amountAndOwnerConfirmed;
-        bool pendingExit;
-        bool succesfullyWithdrawn;
-        address collateralHolder;
-        address originalOwner;
-        address boughtBy;
-        uint256 value;
-        uint64 dateExitAllowed;
-    }
+    uint8 constant ExitStatusNull = 0;
+    uint8 constant ExitStatusWaitingForInputChallenges = 1;
+    uint8 constant ExitStatusWaitingForOutputChallenges = 2;
 
-    uint8 constant PublishedTXstatusNull = 0;
-    uint8 constant PublishedTXstatusWaitingForInputChallenges = 1;
-    uint8 constant PublishedTXstatusWaitingForOutputChallenges = 2;
+    mapping(bytes22 => StructuresLibrary.ExitRecord) public exitRecords;
+    mapping(bytes22 => StructuresLibrary.LimboData) limboExitsData;
+    mapping(bytes22 => bool) public succesfulExits;
 
-    struct Transaction {
-        bool isCanonical;
-        bool isLimbo;
-        uint72 priority;
-        uint8 status;
-        uint8 transactionType;
-        uint72[] inputIndexes;
-        uint72[] outputIndexes;
-        uint8[] limboOutputIndexes;
-        uint64 datePublished;
-        address sender;
-    }
+    event ErrorFoundEvent(uint256 indexed _lastValidBlockNumber);
 
-    mapping(uint72 => UTXO) public publishedUTXOs;
-    mapping(uint160 => Transaction) public publishedTransactions;
-    mapping(uint160 => Transaction) public limboTransactions;
-    mapping(uint176 => UTXO) public limboUTXOs;
+    event DepositEvent(address indexed _from, uint256 indexed _amount, uint256 indexed _depositIndex);
+    event DepositWithdrawStartedEvent(uint256 indexed _depositIndex);
+    event DepositWithdrawChallengedEvent(uint256 indexed _depositIndex);
+    event DepositWithdrawCompletedEvent(uint256 indexed _depositIndex);
 
-    event InputIsPublished(uint72 indexed _index);
-    event OutputIsPublished(uint72 indexed _index);
+    event TransactionPublished(bytes32 indexed _hash, bytes _data);
+    event ExitRecordCreated(bytes22 indexed _hash);
+    event ExitChallenged(bytes22 indexed _hash);
     event TransactionIsPublished(uint64 indexed _index);
+    event ExitStartedEvent(address indexed _from, uint72 indexed _priority, uint72 indexed _index);
+
+    event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
+    event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
+    event ExitBuyoutAccepted(bytes22 indexed _partialHash, address indexed _from);    
 // end of storage declarations --------------------------- 
 
-
-    constructor(address _priorityQueue, address _blockStorage) public payable {
-        require(_priorityQueue != address(0));
-        require(_blockStorage != address(0));
-        exitQueue = PriorityQueueInterface(_priorityQueue);
-        blockStorage = PlasmaBlockStorageInterface(_blockStorage);
-        operatorsBond = msg.value;
+    constructor() public {
     }
-
-    function addTotalDeposited(int256 _am) internal {
-        totalAmountDeposited = totalAmountDeposited + _am;
-    }
-
-    function addTotalPendingExit(int256 _am) internal {
-        amountPendingExit = amountPendingExit + _am;
-    }
+// ----------------------------------
 
     function setErrorAndLastFoundBlock(uint32 _invalidBlockNumber, bool _transferReward, address _payTo) internal returns (bool success) {
         if (!plasmaErrorFound) {
@@ -173,7 +122,6 @@ contract PlasmaChallenges {
 // ----------------------------------
 
     function startDepositWithdraw(uint256 depositIndex) public payable returns (bool success) {
-        //require(block.number >= (depositIndex >> 32) + 500);
         require(msg.value == DepositWithdrawCollateral);
         DepositRecord storage record = depositRecords[depositIndex];
         require(record.status == DepositStatusDeposited);
@@ -181,7 +129,6 @@ contract PlasmaChallenges {
         record.status = DepositStatusWithdrawStarted;
         record.withdrawStartedAt = block.timestamp;
         record.hasCollateral = true;
-        addTotalPendingExit(int256(record.amount));
         emit DepositWithdrawStartedEvent(depositIndex);
         return true;
     }
@@ -196,8 +143,6 @@ contract PlasmaChallenges {
         if (record.hasCollateral) {
             toSend += DepositWithdrawCollateral;
         }
-        addTotalDeposited(-int256(record.amount));
-        addTotalPendingExit(-int256(record.amount));
         record.from.transfer(toSend);
         return true;
     }
@@ -224,46 +169,9 @@ contract PlasmaChallenges {
         require(input.amount == depositIndex);
         record.status = DepositStatusDepositConfirmed;
         emit DepositWithdrawChallengedEvent(depositIndex);
-        addTotalPendingExit(-int256(record.amount));
         if (record.hasCollateral) {
             msg.sender.transfer(DepositWithdrawCollateral);
         }
-        return true;
-    }
-
-// ----------------------------------
-
-// prove that there exist a valid transaction that spends an UTXO that is in exit queue
-    // make it cheap
-    function challengeExit(
-        uint72 _utxoIndex, // one pending exit
-        uint32 _plasmaBlockNumber, // block where the spend is
-        uint8 _inputNumber,    // output being exited
-        bytes _plasmaTransaction, // transaction itself
-        bytes _merkleProof) // proof
-    public returns(bool success) {
-        UTXO storage utxo = publishedUTXOs[_utxoIndex];
-        require(utxo.spendingTransactionIndex == 0);
-        require(utxo.pendingExit);
-        if(utxo.succesfullyWithdrawn) {
-            revert(); // for now
-        }
-        require(!utxo.isLinkedToLimbo);
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        require(TX.isWellFormed);
-        require(TX.txType == TxTypeFund || TX.txType == TxTypeSplit || TX.txType == TxTypeMerge);
-        if (TX.txType == TxTypeFund) {
-            require(blockStorage.isOperator(TX.sender));
-        }
-        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(included);
-        TX.txNumberInBlock = uint32(txNumber);
-        PlasmaTransactionLibrary.TransactionInput memory txInput = TX.inputs[_inputNumber];
-        uint72 transactionIndex = PlasmaTransactionLibrary.makeTransactionIndex(_plasmaBlockNumber, TX.txNumberInBlock);
-        utxo.pendingExit = false;
-        utxo.spendingTransactionIndex = uint160(transactionIndex);
-        utxo.utxoStatus = UTXOstatusSpent;
-        msg.sender.transfer(WithdrawCollateral);
         return true;
     }
 
@@ -301,33 +209,40 @@ contract PlasmaChallenges {
         return true;
     }
 
-// TODO either account in here OR in global UTXO challenge procedure
-
 // transaction output is withdrawn and spent in Plasma chain
-    // function proveSpendAndWithdraw(uint32 _plasmaBlockNumber, //references and proves transaction
-    //                         uint8 _inputNumber,
-    //                         bytes _plasmaTransaction,
-    //                         bytes _merkleProof,
-    //                         uint256 _withdrawIndex //references withdraw
-    //                         ) public returns (bool success) {
-    //     // uint256 txIndex = PlasmaTransactionLibrary.makeInputOrOutputIndex(_plasmaBlockNumber, _plasmaTxNumInBlock, _inputNumber);
-    //     WithdrawRecord storage record = withdrawRecords[_withdrawIndex];
-    //     require(record.status == WithdrawStatusCompleted);
-    //     address signer;
-    //     PlasmaTransactionLibrary.TransactionInput memory input;
-    //     uint256 index;
-    //     (signer, input, index) = getTXinputDetailsFromProof(_plasmaBlockNumber, _inputNumber, _plasmaTransaction, _merkleProof);
-    //     require(signer != address(0));
-    //     require(input.blockNumber == record.blockNumber);
-    //     require(input.txNumberInBlock == record.txNumberInBlock);
-    //     require(input.outputNumberInTX == record.outputNumberInTX);
-    //     setErrorAndLastFoundBlock(_plasmaBlockNumber, true, msg.sender);
-    //     return true;
-    // }
+    function proveSpendAndWithdraw(
+        uint32 _plasmaBlockNumber, //references and proves ownership on withdraw transaction
+        bytes _plasmaTransaction,
+        bytes _merkleProof,
+        bytes _originatingPlasmaTransaction,
+        bytes _originatingMerkleProof,
+        uint8 _inputNumber,
+        bytes22 _partialHash)
+    public returns(bool success) {
+        PlasmaTransactionLibrary.PlasmaTransaction memory spendingTX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
+        PlasmaTransactionLibrary.TransactionInput memory spendingInput = spendingTX.inputs[_inputNumber];
+        PlasmaTransactionLibrary.PlasmaTransaction memory exitedTX = checkForValidityAndInclusion(spendingInput.blockNumber, _originatingPlasmaTransaction, _originatingMerkleProof);
+        StructuresLibrary.ExitRecord memory exitRecord;
+        exitRecord.transactionRef = keccak256(_originatingPlasmaTransaction);
+        exitRecord.blockNumber = spendingInput.blockNumber;
+        exitRecord.transactionNumber = exitedTX.txNumberInBlock;
+        exitRecord.outputNumber = spendingInput.outputNumberInTX;
+        bytes22 exitRecordHash = StructuresLibrary.getCompactExitRecordCommitment(exitRecord);
+        require(succesfulExits[exitRecordHash] == true);
+        PlasmaTransactionLibrary.TransactionOutput memory exitedOutput = exitedTX.outputs[spendingInput.outputNumberInTX];
+        require(spendingInput.outputNumberInTX == exitedOutput.outputNumberInTX);
+        require(exitedTX.txNumberInBlock == spendingInput.txNumberInBlock);
+        require(exitedOutput.recipient == spendingTX.sender);
+        require(exitedOutput.amount == spendingInput.amount);
+        setErrorAndLastFoundBlock(_plasmaBlockNumber, true, msg.sender);
+        return true;
+    }
 
-    function proveInvalidDeposit(uint32 _plasmaBlockNumber, //references and proves transaction
-                            bytes _plasmaTransaction,
-                            bytes _merkleProof) public returns (bool success) {
+    function proveInvalidDeposit(
+        uint32 _plasmaBlockNumber, //references and proves transaction
+        bytes _plasmaTransaction,
+        bytes _merkleProof) 
+    public returns (bool success) {
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
         (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
         require(included);
@@ -349,12 +264,14 @@ contract PlasmaChallenges {
 
     //prove double funding of the same
 
-    function proveDoubleFunding(uint32 _plasmaBlockNumber1, //references and proves transaction number 1
-                            bytes _plasmaTransaction1,
-                            bytes _merkleProof1,
-                            uint32 _plasmaBlockNumber2, //references and proves transaction number 2
-                            bytes _plasmaTransaction2,
-                            bytes _merkleProof2) public returns (bool success) {
+    function proveDoubleFunding(
+        uint32 _plasmaBlockNumber1, //references and proves transaction number 1
+        bytes _plasmaTransaction1,
+        bytes _merkleProof1,
+        uint32 _plasmaBlockNumber2, //references and proves transaction number 2
+        bytes _plasmaTransaction2,
+        bytes _merkleProof2) 
+    public returns (bool success) {
         address signer1;
         uint256 depositIndex1;
         uint256 transactionIndex1;
@@ -375,32 +292,6 @@ contract PlasmaChallenges {
         }
         return true;
     }
-
-    // function checkDoubleFundingFromInternal(address signer1,
-    //                                         uint256 depositIndex1,
-    //                                         uint256 transactionIndex1,
-    //                                         address signer2,
-    //                                         uint256 depositIndex2,
-    //                                         uint256 transactionIndex2) internal view returns (bool) {
-    //     require(blockStorage.isOperator(signer1));
-    //     require(blockStorage.isOperator(signer2));
-    //     require(depositIndex1 == depositIndex2);
-    //     require(transactionIndex1 != transactionIndex2);
-    //     return true;
-    // }
-
-// Prove invalid transaction (malformed) in the block
-// Prove invalid ownership in split or merge, or balance breaking inside a signle transaction or between transactions
-// no longer valid with padded blocks
-
-    // function proveInvalidTransaction(uint32 _plasmaBlockNumber, //references and proves transaction
-    //                         bytes _plasmaTransaction,
-    //                         bytes _merkleProof) public returns (bool success) {
-    //     require(PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof));
-    //     require(!isWellFormedTransaction(_plasmaTransaction));
-    //     setErrorAndLastFoundBlock(_plasmaBlockNumber, true, msg.sender);
-    //     return true;
-    // }
 
 // Prove that transaction in block references a block in future
 
@@ -480,7 +371,7 @@ contract PlasmaChallenges {
         bytes _originatingPlasmaTransaction,
         bytes _originatingMerkleProof,
         uint256 _inputOfInterest)
-         public returns(bool success) {
+    public returns(bool success) {
         uint256 idx = 0;
         PlasmaTransactionLibrary.PlasmaTransaction memory spendingTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
         PlasmaTransactionLibrary.PlasmaTransaction memory originatingTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_originatingPlasmaTransaction);
@@ -501,7 +392,7 @@ contract PlasmaChallenges {
         PlasmaTransactionLibrary.PlasmaTransaction memory _originatingTX,
         uint32 _originatingPlasmaBlockNumber,
         uint256 _inputNumber) 
-        internal view returns (bool isValid) {
+    internal view returns (bool isValid) {
 
         require(isWellFormedDecodedTransaction(_spendingTX));
         require(isWellFormedDecodedTransaction(_originatingTX));
@@ -523,16 +414,6 @@ contract PlasmaChallenges {
             if (outputOfInterest.recipient != _spendingTX.sender) {
                 return false;
             }
-            // if (_spendingTX.outputs.length != 1) {
-            //     return false;
-            // }
-            // if (outputOfInterest.recipient != _spendingTX.outputs[0].recipient) {
-            //     return false;
-            // }
-            // if (outputOfInterest.amount < _spendingTX.outputs[0].amount) {
-            //     return false;
-            // }
-            // return true;
         } else if (_spendingTX.txType == TxTypeFund) {
             return true;
         }
@@ -542,6 +423,19 @@ contract PlasmaChallenges {
 
 // ----------------------------------
 // Convenience functions
+
+    function checkForValidityAndInclusion(
+        uint32 _plasmaBlockNumber, // block with the transaction
+        bytes _plasmaTransaction, // transaction itself
+        bytes _merkleProof)
+    internal view returns(PlasmaTransactionLibrary.PlasmaTransaction memory TX) {
+        TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        require(isWellFormedDecodedTransaction(TX));
+        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        require(included);
+        TX.txNumberInBlock = uint32(txNumber);
+        return TX;
+    }
 
     function isWellFormedTransaction(bytes _plasmaTransaction) public view returns (bool isWellFormed) {
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
@@ -562,10 +456,10 @@ contract PlasmaChallenges {
             return blockStorage.isOperator(TX.sender) && input.blockNumber == 0 && input.txNumberInBlock == 0 && input.outputNumberInTX == 0;
         } else if (TX.txType == TxTypeSplit || TX.txType == TxTypeMerge) {
             for (counter = 0; counter < TX.inputs.length; counter++) {
-                balance += TX.inputs[counter].amount;
+                balance = SafeMath.add(balance, TX.inputs[counter].amount);
             }
             for (counter = 0; counter < TX.outputs.length; counter++) {
-                balance -= TX.outputs[counter].amount;
+                balance = SafeMath.sub(balance, TX.inputs[counter].amount);
             }
             if (balance != 0) {
                 return false;

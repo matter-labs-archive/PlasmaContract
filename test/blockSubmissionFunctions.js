@@ -505,7 +505,7 @@ contract('PlasmaParent block submission', async (accounts) => {
         const merkleRoot = block.header.merkleRootHash;
         for (let i = 0; i < numToCreate/10; i++) {
             const randomTXnum = Math.floor(Math.random()*numToCreate);
-            const rawTX = block.transactions[randomTXnum].signedTransaction.serialize();
+            const rawTX = block.transactions[randomTXnum].serialize();
             const proofObject = block.getProofForTransaction(rawTX);
             const included = tools.validateBinaryProof(proofObject.proof, proofObject.tx.hash(), merkleRoot);
             assert(included);

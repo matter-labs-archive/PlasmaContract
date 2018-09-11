@@ -3,35 +3,13 @@ pragma solidity ^0.4.24;
 // original source from https://github.com/DavidKnott
 // https://github.com/omisego/plasma-mvp/blob/master/plasma/root_chain/contracts/RootChain/RootChain.sol
 
-library SafeMath {
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a * b;
-        assert(a == 0 || c / a == b);
-        return c;
-    }
-
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a / b;
-        return c;
-    }
-
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        assert(b <= a);
-        return a - b;
-    }
-
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        assert(c >= a);
-        return c;
-    }
-}
+import {SafeMath} from "./SafeMath.sol";
 
 interface PriorityQueueInterface {
-    function insert(uint72 _priority, uint8 _type, bytes22 _index) external;
+    function insert(uint72 _priority, bytes22 _partialHash) external;
     function minChild(uint256 i) view external returns (uint256);
-    function getMin() external view returns (uint8 recordType, bytes22 index);
-    function delMin() external returns (uint8 recordType, bytes22 index);
+    function getMin() external view returns (bytes22 partialHash);
+    function delMin() external returns (bytes22 partialHash);
     function currentSize() external returns (uint256);
 }
 
@@ -54,13 +32,10 @@ contract PriorityQueue {
      *  Storage
      */
 
-    uint8 constant RecordTypeIndex = 1;
-    uint8 constant RecordTypeHash = 2;
-
     struct QueueItem {
         uint72 priority;
-        uint8 recordType;
-        bytes22 withdrawIndex;
+        bytes22 partialHash;
+        // 31 bytes
     }
     
     address public owner;
@@ -72,22 +47,19 @@ contract PriorityQueue {
         owner = msg.sender;
         QueueItem memory item = QueueItem({
             priority: 0,
-            recordType: 0,
-            withdrawIndex: bytes22(0)
+            partialHash: bytes22(0)
         });
         heapList.push(item);
         currentSize = 0;
     }
 
-    function insert(uint72 _priority, uint8 _type, bytes22 _index)
+    function insert(uint72 _priority, bytes22 _index)
         public
         onlyOwner
     {
-        require(_type == RecordTypeIndex || _type == RecordTypeHash);
         heapList.push(QueueItem({
             priority: _priority,
-            recordType: _type,
-            withdrawIndex: _index
+            partialHash: _index
         }));
         currentSize = currentSize.add(1);
         percUp(currentSize);
@@ -112,24 +84,23 @@ contract PriorityQueue {
     function getMin()
         public
         view
-        returns (uint8 recordType, bytes22 index)
+        returns (bytes22 index)
     {
-        return (heapList[1].recordType, heapList[1].withdrawIndex);
+        return heapList[1].partialHash;
     }
 
     function delMin()
         public
         onlyOwner
-        returns (uint8 recordType, bytes22 index)
+        returns (bytes22 partialHash)
     {
         require(currentSize > 0);
-        recordType = heapList[1].recordType;
-        index = heapList[1].withdrawIndex;
+        partialHash = heapList[1].partialHash;
         heapList[1] = heapList[currentSize];
         delete heapList[currentSize];
         currentSize = currentSize.sub(1);
         percDown(1);
-        return (recordType, index);
+        return partialHash;
     }
 
     function percUp(uint256 j)

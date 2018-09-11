@@ -7,3 +7,4 @@ node_modules
 !/build/.keep
 !/build/abi
 build/details
+.node-*
