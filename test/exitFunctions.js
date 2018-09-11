@@ -32,7 +32,7 @@ contract('PlasmaParent', async (accounts) => {
     let plasma;
     let storage;
     let challenger;
-    let exitProcessor;
+    let buyoutProcessor;
     let limboExitGame;
     let firstHash;
 
@@ -45,7 +45,7 @@ contract('PlasmaParent', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, exitProcessor, queue, storage} = result);
+        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
     })
 
     it('should exit from the huge block', async () => {
@@ -88,13 +88,18 @@ contract('PlasmaParent', async (accounts) => {
                 console.log("Single exit gas price is " + submissionReceipt.receipt.gasUsed)
                 // struct ExitRecord {
                 //     bytes32 transactionRef;
+                //     //32 bytes
+                //     uint256 amount;
+                //     // 64 bytes
                 //     address owner;
                 //     uint64 timePublished;
                 //     uint32 blockNumber;
+                //     // 96 bytes
                 //     uint32 transactionNumber;
                 //     uint8 outputNumber;
                 //     bool isValid;
-                //     uint256 amount;
+                //     bool isLimbo;
+                //     // 96 + 7 bytes
                 // }
                 const transactionPublishedEvent = submissionReceipt.logs[0]
                 const txHashFromEvent = transactionPublishedEvent.args._hash;
@@ -105,12 +110,14 @@ contract('PlasmaParent', async (accounts) => {
                 const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
                 assert(exitRecord[0] === txHash);
-                assert(exitRecord[1] === alice);
-                assert(exitRecord[3].toString(10) === "1")
-                assert(exitRecord[4].toNumber() === randomTXnum)
-                assert(exitRecord[5].toNumber() === 0)
-                assert(exitRecord[6] === true)
-                assert(exitRecord[7].toNumber() === 100 + randomTXnum)
+                assert(exitRecord[1].toNumber() === 100 + randomTXnum)
+                assert(exitRecord[2] === alice);
+                assert(exitRecord[4].toString(10) === "1")
+                assert(exitRecord[5].toNumber() === randomTXnum)
+                assert(exitRecord[6].toNumber() === 0)
+                assert(exitRecord[7] === true)
+                assert(exitRecord[8] === false)
+                
                 assert(txHash === txHashFromEvent);
                 assert(txData === txDataFromEvent);
             } catch(e) {
@@ -149,16 +156,21 @@ contract('PlasmaParent', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
         console.log("Single exit gas price for exiting a deposit transaction is " + submissionReceipt.receipt.gasUsed)
-        // struct ExitRecord {
-        //     bytes32 transactionRef;
-        //     address owner;
-        //     uint64 timePublished;
-        //     uint32 blockNumber;
-        //     uint32 transactionNumber;
-        //     uint8 outputNumber;
-        //     bool isValid;
-        //     uint256 amount;
-        // }
+                // struct ExitRecord {
+                //     bytes32 transactionRef;
+                //     //32 bytes
+                //     uint256 amount;
+                //     // 64 bytes
+                //     address owner;
+                //     uint64 timePublished;
+                //     uint32 blockNumber;
+                //     // 96 bytes
+                //     uint32 transactionNumber;
+                //     uint8 outputNumber;
+                //     bool isValid;
+                //     bool isLimbo;
+                //     // 96 + 7 bytes
+                // }
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
@@ -168,14 +180,46 @@ contract('PlasmaParent', async (accounts) => {
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "1")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 100)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "1")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === true)
-        assert(exitRecord[7].toNumber() === 100)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === true)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
+    })
+
+    it('should not allow exit from non-owner of the output', async () => {
+        const withdrawCollateral = await plasma.WithdrawCollateral();
+        await plasma.deposit({from: alice, value: "100"});
+
+        const allTXes = [];
+        const fundTX = createTransaction(TxTypeFund, 0, 
+            [{
+                blockNumber: 0,
+                txNumberInBlock: 0,
+                outputNumberInTransaction: 0,
+                amount: 0
+            }],
+            [{
+                amount: 100,
+                to: alice
+            }],
+                operatorKey
+        )
+        allTXes.push(fundTX)
+        const block = createBlock(1, allTXes.length, firstHash, allTXes,  operatorKey)
+        await testUtils.submitBlock(plasma, block);
+
+        const proofObject = block.getProofForTransactionByNumber(0);
+        const {proof, tx} = proofObject;
+        await expectThrow(plasma.startExit(
+            1, 0, ethUtil.bufferToHex(tx.serialize()), ethUtil.bufferToHex(proof),
+            {from: bob, value: withdrawCollateral}
+        ))
     })
     
     it('should exit and challenge after', async () => {
@@ -207,16 +251,7 @@ contract('PlasmaParent', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
         console.log("Single exit gas price for exiting a deposit transaction is " + submissionReceipt.receipt.gasUsed)
-        // struct ExitRecord {
-        //     bytes32 transactionRef;
-        //     address owner;
-        //     uint64 timePublished;
-        //     uint32 blockNumber;
-        //     uint32 transactionNumber;
-        //     uint8 outputNumber;
-        //     bool isValid;
-        //     uint256 amount;
-        // }
+
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
@@ -226,12 +261,14 @@ contract('PlasmaParent', async (accounts) => {
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "1")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 100)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "1")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === true)
-        assert(exitRecord[7].toNumber() === 100)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === true)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
 
@@ -266,12 +303,14 @@ contract('PlasmaParent', async (accounts) => {
         exitRecord = await plasma.exitRecords(exitRecordHash);
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "1")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 100)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "1")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === false)
-        assert(exitRecord[7].toNumber() === 100)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === false)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
     })
@@ -322,16 +361,7 @@ contract('PlasmaParent', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
         console.log("Single exit gas price for exiting a nondeposit transaction is " + submissionReceipt.receipt.gasUsed)
-        // struct ExitRecord {
-        //     bytes32 transactionRef;
-        //     address owner;
-        //     uint64 timePublished;
-        //     uint32 blockNumber;
-        //     uint32 transactionNumber;
-        //     uint8 outputNumber;
-        //     bool isValid;
-        //     uint256 amount;
-        // }
+
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
@@ -341,12 +371,14 @@ contract('PlasmaParent', async (accounts) => {
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "2")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 101)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "2")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === true)
-        assert(exitRecord[7].toNumber() === 101)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === true)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
 
@@ -375,12 +407,14 @@ contract('PlasmaParent', async (accounts) => {
         exitRecord = await plasma.exitRecords(exitRecordHash);
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "2")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 101)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "2")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === false)
-        assert(exitRecord[7].toNumber() === 101)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === false)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
     })
@@ -444,16 +478,7 @@ contract('PlasmaParent', async (accounts) => {
             2, 0, ethUtil.bufferToHex(tx.serialize()), ethUtil.bufferToHex(proof),
             {from: alice, value: withdrawCollateral}
         )
-        // struct ExitRecord {
-        //     bytes32 transactionRef;
-        //     address owner;
-        //     uint64 timePublished;
-        //     uint32 blockNumber;
-        //     uint32 transactionNumber;
-        //     uint8 outputNumber;
-        //     bool isValid;
-        //     uint256 amount;
-        // }
+
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
@@ -463,12 +488,14 @@ contract('PlasmaParent', async (accounts) => {
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "2")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 100)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "2")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === true)
-        assert(exitRecord[7].toNumber() === 100)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === true)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
 
@@ -499,12 +526,14 @@ contract('PlasmaParent', async (accounts) => {
         exitRecord = await plasma.exitRecords(exitRecordHash);
 
         assert(exitRecord[0] === txHash);
-        assert(exitRecord[1] === alice);
-        assert(exitRecord[3].toString(10) === "2")
-        assert(exitRecord[4].toNumber() === 0)
+        assert(exitRecord[1].toNumber() === 100)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "2")
         assert(exitRecord[5].toNumber() === 0)
-        assert(exitRecord[6] === false)
-        assert(exitRecord[7].toNumber() === 100)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === false)
+        assert(exitRecord[8] === false)
+
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
     })

@@ -23,7 +23,7 @@ const increaseTime = async function(addSeconds) {
     await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_mine", params: [], id: 1})
 };
 
-contract('PlasmaParent', async (accounts) => {
+contract('Deposit withdraw functions', async (accounts) => {
     BN = web3.BigNumber;
     const operatorAddress = accounts[0];
     const operatorKey = keys[0];
@@ -32,7 +32,7 @@ contract('PlasmaParent', async (accounts) => {
     let plasma;
     let storage;
     let challenger;
-    let exitProcessor;
+    let buyoutProcessor;
     let limboExitGame;
     let firstHash;
 
@@ -45,7 +45,7 @@ contract('PlasmaParent', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, exitProcessor, queue, storage} = result);
+        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
     })
 
     it('should emit deposit event', async () => {
