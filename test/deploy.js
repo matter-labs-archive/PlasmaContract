@@ -1,14 +1,14 @@
 const PlasmaParent   = artifacts.require('PlasmaParent');
 const PriorityQueue  = artifacts.require('PriorityQueue');
 const BlockStorage = artifacts.require("PlasmaBlockStorage");
-// const Challenger = artifacts.require("PlasmaChallenges");
+const Challenger = artifacts.require("PlasmaChallenges");
 const BuyoutProcessor = artifacts.require("PlasmaBuyoutProcessor"); 
 // const LimboExitGame = artifacts.require("PlasmaExitGame");
 const assert = require("assert");
 
 console.log("Parent bytecode size = " + (PlasmaParent.bytecode.length -2)/2);
-// console.log("Exit processor bytecode size = " + (ExitProcessor.bytecode.length -2)/2);
-// console.log("Challenger bytecode size = " + (Challenger.bytecode.length -2)/2);
+console.log("Buyouts processor bytecode size = " + (BuyoutProcessor.bytecode.length -2)/2);
+console.log("Challenger bytecode size = " + (Challenger.bytecode.length -2)/2);
 // console.log("Limbo exit game bytecode length = " + (LimboExitGame.bytecode.length -2)/2);
 
 async function deploy(operator, operatorAddress) {
@@ -25,10 +25,9 @@ async function deploy(operator, operatorAddress) {
     plasma = await PlasmaParent.new(queue.address, storage.address, {from: operator, value: "10000000000000000000"})
     await storage.setOwner(plasma.address, {from: operator})
     await queue.setOwner(plasma.address, {from: operator})
-    challenger = plasma
     limboExitGame = plasma
     buyoutProcessor = await BuyoutProcessor.new({from: operator});
-    // challenger = await Challenger.new(queue.address, storage.address, {from: operator});
+    challenger = await Challenger.new({from: operator});
     // limboExitGame = await LimboExitGame.new(queue.address, storage.address, {from: operator});
     await plasma.setDelegates(buyoutProcessor.address, challenger.address, limboExitGame.address, {from: operator})
     await plasma.setOperator(operatorAddress, 2, {from: operator});
@@ -45,7 +44,7 @@ async function deploy(operator, operatorAddress) {
     assert(limboExitGameAddress == limboExitGame.address);
 
     buyoutProcessor = BuyoutProcessor.at(plasma.address);
-    // challenger = Challenger.at(plasma.address); // instead of merging the ABI
+    challenger = Challenger.at(plasma.address); // instead of merging the ABI
     // limboExitGame = LimboExitGame.at(plasma.address);
     firstHash = await plasma.hashOfLastSubmittedBlock();
 

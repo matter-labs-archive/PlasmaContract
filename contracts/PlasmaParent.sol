@@ -7,8 +7,6 @@ import {StructuresLibrary} from "./Structures.sol";
 import {SafeMath} from "./SafeMath.sol";
 
 contract PlasmaParent {
-    // using PlasmaTransactionLibrary for PlasmaTransactionLibrary.PlasmaTransaction;
-
 // begining of storage declaration
 
     bool public plasmaErrorFound;
@@ -74,6 +72,7 @@ contract PlasmaParent {
 
     mapping(bytes22 => StructuresLibrary.ExitRecord) public exitRecords;
     mapping(bytes22 => StructuresLibrary.LimboData) limboExitsData;
+    mapping(bytes22 => bool) public succesfulExits;
 
     event ErrorFoundEvent(uint256 indexed _lastValidBlockNumber);
 
@@ -163,7 +162,7 @@ contract PlasmaParent {
     }
 
     function incrementWeekOldCounter() public adjustsTime {
-        
+
     }
 // ----------------------------------
 
@@ -357,6 +356,7 @@ contract PlasmaParent {
                     break; // priority did not mature
                 }
             }
+            delete exitRecords[index];
             if (exitQueue.currentSize() > 0) {
                 toSend = 0;
                 beneficiary = address(0);
@@ -381,12 +381,12 @@ contract PlasmaParent {
         }
         address beneficiary = exitRecord.owner;
         ExitBuyoutOffer storage offer = exitBuyoutOffers[_index];
-        if (offer.accepted && offer.from != address(0)) {
+        if (offer.accepted) {
             beneficiary = offer.from;
             delete exitBuyoutOffers[_index];
         }
         uint256 toSend = exitRecord.amount + WithdrawCollateral;
-        delete exitRecords[_index];
+        succesfulExits[_index] = true;
         // we use send so some malicious contract does not stop the queue from exiting
         beneficiary.send(toSend);
         return true;
@@ -412,7 +412,7 @@ contract PlasmaParent {
             // we use send so some malicious contract does not stop the queue from exiting
             beneficiary.send(amount);
         }
-        delete exitRecords[_index];
+        succesfulExits[_index] = true;
         return true;
     }
 

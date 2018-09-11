@@ -7,8 +7,6 @@ import {StructuresLibrary} from "./Structures.sol";
 import {SafeMath} from "./SafeMath.sol";
 
 contract PlasmaBuyoutProcessor {
-    using PlasmaTransactionLibrary for PlasmaTransactionLibrary.PlasmaTransaction;
-
 // begining of storage declaration
 
     bool public plasmaErrorFound;
@@ -74,6 +72,7 @@ contract PlasmaBuyoutProcessor {
 
     mapping(bytes22 => StructuresLibrary.ExitRecord) public exitRecords;
     mapping(bytes22 => StructuresLibrary.LimboData) limboExitsData;
+    mapping(bytes22 => bool) public succesfulExits;
 
     event ErrorFoundEvent(uint256 indexed _lastValidBlockNumber);
 

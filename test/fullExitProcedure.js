@@ -21,8 +21,6 @@ const {
     TxTypeSplit} = require("../lib/Tx/RLPtx");
 
 contract('PlasmaParent exit procedure', async (accounts) => {
-
-    BN = web3.BigNumber;
     const operatorAddress = accounts[0];
     const operatorKey = keys[0];
 
@@ -125,7 +123,8 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         console.log("One item in the queue finalization gas = " + submissionReceipt.receipt.gasUsed)
         let newBalance = await web3.eth.getBalance(alice);
         assert(newBalance.gt(oldBalance));
-        
+        let succesfulExit = await plasma.succesfulExits(exitRecordHash);
+        assert(succesfulExit);
         size = await queue.currentSize();
         assert(size.toString(10) === "0");
 
@@ -258,7 +257,10 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         let newBalanceBob = await web3.eth.getBalance(bob);
         assert(newBalanceAlice.eq(oldBalanceAlice));
         assert(newBalanceBob.gt(oldBalanceBob));
-        
+        let succesfulExit = await plasma.succesfulExits(bobHash);
+        assert(succesfulExit);
+        succesfulExit = await plasma.succesfulExits(aliceHash);
+        assert(!succesfulExit);
         size = await queue.currentSize();
         assert(size.toString(10) === "0");
 

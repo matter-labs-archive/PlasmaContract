@@ -244,9 +244,9 @@ contract('Transaction deserialization tester', async (accounts) => {
         assert(Buffer(proof3copy).equals(Buffer(proof3)));
         const root = block.getMerkleHash();
         const info = await txTester.parseFromBlock(ethUtil.bufferToHex(reencodedTX3), ethUtil.bufferToHex(proof3), ethUtil.bufferToHex(root));
-        console.log(ethUtil.bufferToHex(reencodedTX3));
-        console.log(ethUtil.bufferToHex(proof3));
-        console.log(ethUtil.bufferToHex(root));
+        // console.log(ethUtil.bufferToHex(reencodedTX3));
+        // console.log(ethUtil.bufferToHex(proof3));
+        // console.log(ethUtil.bufferToHex(root));
         const txNumberInBlock = info[0].toNumber();
         const txType = info[1].toNumber();
         const inputsLength = info[2].toNumber();
@@ -314,9 +314,9 @@ contract('Transaction deserialization tester', async (accounts) => {
         assert(Buffer(proof3copy).equals(Buffer(proof3)));
         const root = block.getMerkleHash();
         const info = await txTester.parseFromBlockLimited(ethUtil.bufferToHex(reencodedTX3), ethUtil.bufferToHex(proof3), ethUtil.bufferToHex(root));
-        console.log(ethUtil.bufferToHex(reencodedTX3));
-        console.log(ethUtil.bufferToHex(proof3));
-        console.log(ethUtil.bufferToHex(root));
+        // console.log(ethUtil.bufferToHex(reencodedTX3));
+        // console.log(ethUtil.bufferToHex(proof3));
+        // console.log(ethUtil.bufferToHex(root));
         const txNumberInBlock = info[1].toNumber();
         assert(info[0]);
         assert(txNumberInBlock === 2);
