@@ -32,7 +32,7 @@ contract PlasmaBlockStorage {
     uint256 public lastBlockNumber;
     uint256 public weekOldBlockNumber;
     uint256 public blockHeaderLength = 137;
-    bytes32 public hashOfLastSubmittedBlock = keccak256(abi.encodePacked(PersonalMessagePrefixBytes,"16","BankexFoundation"));
+    bytes32 public hashOfLastSubmittedBlock = keccak256(abi.encodePacked(PersonalMessagePrefixBytes,"6","Matter"));
 
     uint256 constant SignatureLength = 65;
     uint256 constant BlockNumberLength = 4;
