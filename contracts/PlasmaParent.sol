@@ -471,7 +471,7 @@ contract PlasmaParent {
             calldatacopy(memoryPointer, 0, calldatasize)
             let newFreeMemoryPointer := add(memoryPointer, calldatasize)
             mstore(0x40, newFreeMemoryPointer)
-            let retVal := delegatecall(sub(gas, 10000), callee, memoryPointer, calldatasize, newFreeMemoryPointer, 0x40)
+            let retVal := delegatecall(sub(gas, 2000), callee, memoryPointer, calldatasize, newFreeMemoryPointer, 0x40)
             let retDataSize := returndatasize
             returndatacopy(newFreeMemoryPointer, 0, retDataSize)
             switch retVal case 0 { revert(0,0) } default { return(newFreeMemoryPointer, retDataSize) }
