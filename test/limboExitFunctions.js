@@ -49,7 +49,7 @@ contract('PlasmaParent limbo exit procedure', async (accounts) => {
         // first we fund Alice with something
         const withdrawCollateral = await plasma.WithdrawCollateral();
 
-        await plasma.deposit({from: alice, value: "10000000000000"})
+        await buyoutProcessor.deposit({from: alice, value: "10000000000000"})
         let totalDeposited = await plasma.totalAmountDeposited();
         assert(totalDeposited.toString(10) === "10000000000000");
 

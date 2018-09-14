@@ -50,7 +50,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit from the huge block', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100000000000000"});
+        await buyoutProcessor.deposit({from: alice, value: "100000000000000"});
 
         const numToCreate = 1000;
         const allTXes = [];
@@ -129,7 +129,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit from the deposit transaction', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -194,7 +194,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should not allow exit from non-owner of the output', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -224,7 +224,7 @@ contract('PlasmaParent', async (accounts) => {
     
     it('should exit and challenge after', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -317,7 +317,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit and challenge the input', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -421,7 +421,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit and challenge by showing doublespent input', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 

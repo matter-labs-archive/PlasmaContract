@@ -49,7 +49,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -126,7 +126,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -201,7 +201,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -262,7 +262,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 

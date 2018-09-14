@@ -385,7 +385,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
 
     it('UTXO was successfully withdrawn and than spent in Plasma', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 

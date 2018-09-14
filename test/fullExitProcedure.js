@@ -46,7 +46,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
 
     it('Simulate exit procedure', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -132,7 +132,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
 
     it('Simulate exit procedure with invalid (spent) transaction in queue before valid', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await plasma.deposit({from: alice, value: "100"});
+        await buyoutProcessor.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
