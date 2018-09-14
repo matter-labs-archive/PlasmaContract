@@ -62,14 +62,6 @@ contract PlasmaParent {
     mapping(address => bytes22[]) public allExitsForUser;
     mapping(bytes22 => ExitBuyoutOffer) public exitBuyoutOffers;
 
-    uint8 constant UTXOstatusNull = 0;
-    uint8 constant UTXOstatusUnspent = 1;
-    uint8 constant UTXOstatusSpent = 2;
-
-    uint8 constant ExitStatusNull = 0;
-    uint8 constant ExitStatusWaitingForInputChallenges = 1;
-    uint8 constant ExitStatusWaitingForOutputChallenges = 2;
-
     mapping(bytes22 => StructuresLibrary.ExitRecord) public exitRecords;
     mapping(bytes22 => StructuresLibrary.LimboData) limboExitsData;
     mapping(bytes22 => bool) public succesfulExits;

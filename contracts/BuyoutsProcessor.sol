@@ -62,14 +62,6 @@ contract PlasmaBuyoutProcessor {
     mapping(address => bytes22[]) public allExitsForUser;
     mapping(bytes22 => ExitBuyoutOffer) public exitBuyoutOffers;
 
-    uint8 constant UTXOstatusNull = 0;
-    uint8 constant UTXOstatusUnspent = 1;
-    uint8 constant UTXOstatusSpent = 2;
-
-    uint8 constant ExitStatusNull = 0;
-    uint8 constant ExitStatusWaitingForInputChallenges = 1;
-    uint8 constant ExitStatusWaitingForOutputChallenges = 2;
-
     mapping(bytes22 => StructuresLibrary.ExitRecord) public exitRecords;
     mapping(bytes22 => StructuresLibrary.LimboData) limboExitsData;
     mapping(bytes22 => bool) public succesfulExits;
@@ -85,7 +77,7 @@ contract PlasmaBuyoutProcessor {
     event ExitRecordCreated(bytes22 indexed _hash);
     event ExitChallenged(bytes22 indexed _hash);
     event TransactionIsPublished(uint64 indexed _index);
-    event ExitStartedEvent(address indexed _from, uint72 indexed _priority, uint72 indexed _index);
+    event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _hash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
