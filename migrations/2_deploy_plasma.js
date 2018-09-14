@@ -43,7 +43,7 @@ module.exports = function(deployer, network, accounts) {
         assert(canSignBlocks);
 
         const buyoutProcessorAddress = await parent.buyoutProcessorContract();
-        assert(buyoutProcessorAddress === exitProcessor.address);
+        assert(buyoutProcessorAddress === buyoutProcessor.address);
 
         const limboExitsAddress = await parent.limboExitContract();
         assert(limboExitsAddress === limboExitGame.address);
@@ -63,9 +63,9 @@ module.exports = function(deployer, network, accounts) {
         fs.writeFileSync("build/details", JSON.stringify(details));
         let abiOnly = {abi: mergedABI}
         fs.writeFileSync("build/abi", JSON.stringify(abiOnly));
-        if (fs.existsSync("shared")) {
-            fs.writeFileSync("shared/details", JSON.stringify(details));
-            fs.writeFileSync("shared/abi", JSON.stringify(abiOnly));
+        if (fs.existsSync("/data/shared")) {
+            fs.writeFileSync("/data/shared/details", JSON.stringify(details));
+            fs.writeFileSync("/data/shared/abi", JSON.stringify(abiOnly));
         }
 	    console.log('Complete. Contract address: ' + parent.address);
     })();

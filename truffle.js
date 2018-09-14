@@ -1,9 +1,7 @@
 const env = process.env;
 
 // don't load .env file in prod
-if (env.NODE_ENV !== 'production') {
-    require('dotenv').load();
-}
+
 
 // const Web3 = require('web3');
 // const web3 = new Web3();
@@ -19,6 +17,9 @@ module.exports = {
     networks: {
 	    mainnet: {
 		    provider: function() {
+                if (env.NODE_ENV !== 'production') {
+                    require('dotenv').load();
+                }
 			    let HDWalletProvider = require("truffle-hdwallet-provider");
 			    return new HDWalletProvider(env.ETH_MNEMONIC, "https://mainnet.infura.io/" + env.INFURA_TOKEN, 0)
 		    },
@@ -26,6 +27,9 @@ module.exports = {
 	    },
         rinkeby: {
             provider: function() {
+                if (env.NODE_ENV !== 'production') {
+                    require('dotenv').load();
+                }
                 let WalletProvider = require("truffle-wallet-provider");
                 let wallet = require('ethereumjs-wallet').fromPrivateKey(Buffer.from(env.ETH_KEY, 'hex'));
                 return new WalletProvider(wallet, "https://rinkeby.infura.io/" + env.INFURA_TOKEN)
@@ -35,6 +39,9 @@ module.exports = {
         },
 	    rinkeby2: {
 		    provider: function() {
+                if (env.NODE_ENV !== 'production') {
+                    require('dotenv').load();
+                }
 			    let HDWalletProvider = require("truffle-hdwallet-provider");
 			    return new HDWalletProvider(env.ETH_MNEMONIC, "https://rinkeby.infura.io/" + env.INFURA_TOKEN, 0)
 		    },
