@@ -3,7 +3,7 @@ const PlasmaParent   = artifacts.require('PlasmaParent');
 const PriorityQueue  = artifacts.require('PriorityQueue');
 const BlockStorage = artifacts.require("PlasmaBlockStorage");
 const Challenger = artifacts.require("PlasmaChallenges");
-// const BuyoutProcessor = artifacts.require("PlasmaBuyoutProcessor");
+const BuyoutProcessor = artifacts.require("PlasmaBuyoutProcessor");
 // const LimboExitGame = artifacts.require("PlasmaLimboExitGame");
 const assert = require('assert');
 const _ = require('lodash');
@@ -11,7 +11,6 @@ const _ = require('lodash');
 const blockSignerAddress = "0x627306090abab3a6e1400e9345bc60c78a8bef57"
 
 module.exports = function(deployer, network, accounts) {
-    return
     const operator = accounts[0];
     (async () => {
         await deployer.deploy(BlockStorage, {from: operator});
@@ -32,8 +31,9 @@ module.exports = function(deployer, network, accounts) {
         await deployer.deploy(Challenger, {from: operator});
         let challenger = await Challenger.deployed();
 
-        await deployer.deploy(LimboExitGame, {from: operator});
-        let limboExitGame = await LimboExitGame.deployed();
+        // await deployer.deploy(LimboExitGame, {from: operator});
+        // let limboExitGame = await LimboExitGame.deployed();
+        let limboExitGame = challenger; // for now
 
         // setDelegates(address _buyouts, address _challenger, address _limboExit) 
         await parent.setDelegates(buyoutProcessor.address, challenger.address, limboExitGame.address, {from: operator})
@@ -63,6 +63,10 @@ module.exports = function(deployer, network, accounts) {
         fs.writeFileSync("build/details", JSON.stringify(details));
         let abiOnly = {abi: mergedABI}
         fs.writeFileSync("build/abi", JSON.stringify(abiOnly));
+        if (fs.existsSync("shared")) {
+            fs.writeFileSync("shared/details", JSON.stringify(details));
+            fs.writeFileSync("shared/abi", JSON.stringify(abiOnly));
+        }
 	    console.log('Complete. Contract address: ' + parent.address);
     })();
 };
