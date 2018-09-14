@@ -96,6 +96,34 @@ contract PlasmaBuyoutProcessor {
     }
 // ----------------------------------
 
+    // Deposit related functions
+
+    function deposit() payable public returns (bool success) {
+        return depositFor(msg.sender);
+    }
+
+    function depositFor(address _for) payable public returns (bool success) {
+        require(msg.value > 0);
+        require(!plasmaErrorFound);
+        uint256 size;
+        assembly {
+            size := extcodesize(_for)
+        }
+        if (size > 0) {
+            revert();
+        }
+        uint256 depositIndex = depositCounter;
+        DepositRecord storage record = depositRecords[depositIndex];
+        require(record.status == DepositStatusNoRecord);
+        record.from = _for;
+        record.amount = msg.value;
+        record.status = DepositStatusDeposited;
+        depositCounter = depositCounter + 1;
+        emit DepositEvent(_for, msg.value, depositIndex);
+        allDepositRecordsForUser[_for].push(depositIndex);
+        return true;
+    }
+
     function offerOutputBuyout(bytes22 _index, address _beneficiary) public payable returns (bool success) {
         require(msg.value > 0);
         require(_beneficiary != address(0));

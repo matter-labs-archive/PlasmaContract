@@ -85,7 +85,7 @@ contract PlasmaParent {
     event ExitRecordCreated(bytes22 indexed _hash);
     event ExitChallenged(bytes22 indexed _hash);
     event TransactionIsPublished(uint64 indexed _index);
-    event ExitStartedEvent(address indexed _from, uint72 indexed _priority, uint72 indexed _index);
+    event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _hash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
@@ -164,36 +164,6 @@ contract PlasmaParent {
     function incrementWeekOldCounter() public adjustsTime {
 
     }
-// ----------------------------------
-
-// ----------------------------------
-// Deposit related functions
-
-    function deposit() payable public returns (bool success) {
-        return depositFor(msg.sender);
-    }
-
-    function depositFor(address _for) payable public returns (bool success) {
-        require(msg.value > 0);
-        require(!plasmaErrorFound);
-        uint256 size;
-        assembly {
-            size := extcodesize(_for)
-        }
-        if (size > 0) {
-            revert();
-        }
-        uint256 depositIndex = depositCounter;
-        DepositRecord storage record = depositRecords[depositIndex];
-        require(record.status == DepositStatusNoRecord);
-        record.from = _for;
-        record.amount = msg.value;
-        record.status = DepositStatusDeposited;
-        depositCounter = depositCounter + 1;
-        emit DepositEvent(_for, msg.value, depositIndex);
-        allDepositRecordsForUser[_for].push(depositIndex);
-        return true;
-    }
 
 // ----------------------------------
 
@@ -253,7 +223,7 @@ contract PlasmaParent {
         exitRecords[exitRecordHash] = exitRecord;
         emit TransactionPublished(transactionHash, _plasmaTransaction);
         scratchSpace[2] = PlasmaTransactionLibrary.makeInputOrOutputIndex(_plasmaBlockNumber, TX.txNumberInBlock, _outputNumber);
-        emit ExitStartedEvent(msg.sender, scratchSpace[0], scratchSpace[2]);
+        emit ExitStartedEvent(msg.sender, scratchSpace[0], scratchSpace[2], exitRecordHash);
         emit ExitRecordCreated(exitRecordHash);
         require(msg.value == WithdrawCollateral);
         exitQueue.insert(scratchSpace[0], exitRecordHash);
