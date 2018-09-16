@@ -22,8 +22,8 @@ contract PlasmaParent {
 
     uint256 public depositCounter;
 
-    uint256 public DepositWithdrawCollateral = 50000000000000000;
-    uint256 public WithdrawCollateral = 50000000000000000;
+    uint256 public constant DepositWithdrawCollateral = 50000000000000000;
+    uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
     uint256 public constant InputChallangesDelay = (72 hours);
     uint256 public constant OutputChallangesDelay = (72 hours);
@@ -97,43 +97,29 @@ contract PlasmaParent {
         return blockStorage.setOperator(_op, _status);
     }
 
-    function setDelegates(address _buyouts, address _challenger, address _limboExit) public returns (bool success) {
+    function allowDeposits(address _buyouts) public returns (bool success) {
         require(msg.sender == owner);
         require(_buyouts != address(0));
-        require(_challenger != address(0));
-        require(_limboExit != address(0));
         require(buyoutProcessorContract == address(0));
-        require(challengesContract == address(0));
-        require(limboExitContract == address(0));
         buyoutProcessorContract = _buyouts;
-        limboExitContract = _limboExit;
+        return true;
+    }
+
+    function allowChallenges(address _challenger) public returns (bool success) {
+        require(msg.sender == owner);
+        require(_challenger != address(0));
+        require(challengesContract == address(0));
         challengesContract = _challenger;
         return true;
     }
 
-    // function setErrorAndLastFoundBlock(uint32 _invalidBlockNumber, bool _transferReward, address _payTo) internal returns (bool success) {
-    //     if (!plasmaErrorFound) {
-    //         plasmaErrorFound = true;
-    //     }
-    //     if (lastValidBlock == 0) {
-    //         lastValidBlock = _invalidBlockNumber-1;
-    //     } else {
-    //         if(lastValidBlock >= _invalidBlockNumber) {
-    //             lastValidBlock = _invalidBlockNumber-1;
-    //         }
-    //     }
-    //     blockStorage.incrementWeekOldCounter();
-    //     emit ErrorFoundEvent(lastValidBlock);
-    //     if (operatorsBond != 0) {
-    //         uint256 bond = operatorsBond;
-    //         operatorsBond = 0;
-    //         if (_transferReward) {
-    //             address(0xFFfFfFffFFfffFFfFFfFFFFFffFFFffffFfFFFfF).transfer(bond / 2);
-    //             _payTo.transfer(bond / 2);
-    //         }
-    //     }
-    //     return true;
-    // }
+    function allowLimboExits(address _limboExiter) public returns (bool success) {
+        require(msg.sender == owner);
+        require(_limboExiter != address(0));
+        require(limboExitContract == address(0));
+        limboExitContract = _limboExiter; 
+        return true;
+    }
 
     function submitBlockHeaders(bytes _headers) public returns (bool success) {
         require(!plasmaErrorFound);
@@ -156,6 +142,36 @@ contract PlasmaParent {
     function incrementWeekOldCounter() public adjustsTime {
 
     }
+
+// ----------------------------------
+
+// // Deposit related functions
+
+//     function deposit() payable public returns (bool success) {
+//         return depositFor(msg.sender);
+//     }
+
+//     function depositFor(address _for) payable public returns (bool success) {
+//         require(msg.value > 0);
+//         require(!plasmaErrorFound);
+//         uint256 size;
+//         assembly {
+//             size := extcodesize(_for)
+//         }
+//         if (size > 0) {
+//             revert("No deposits to the contracts!");
+//         }
+//         uint256 depositIndex = depositCounter;
+//         DepositRecord storage record = depositRecords[depositIndex];
+//         require(record.status == DepositStatusNoRecord);
+//         record.from = _for;
+//         record.amount = msg.value;
+//         record.status = DepositStatusDeposited;
+//         depositCounter = depositCounter + 1;
+//         emit DepositEvent(_for, msg.value, depositIndex);
+//         allDepositRecordsForUser[_for].push(depositIndex);
+//         return true;
+//     }
 
 // ----------------------------------
 
@@ -269,6 +285,11 @@ contract PlasmaParent {
         require(txInput.outputNumberInTX == originalTxInput.outputNumberInTX);
         require(TX.sender == originalTX.sender);
         require(txInput.amount == originalTxInput.amount);
+        if (_plasmaBlockNumber == exitRecord.blockNumber) {
+            require(TX.txNumberInBlock < exitRecord.transactionNumber);
+        } else {
+            require(_plasmaBlockNumber < exitRecord.blockNumber);
+        }
         exitRecord.isValid = false;
         emit ExitChallenged(_exitRecordHash);
         msg.sender.transfer(WithdrawCollateral);
@@ -426,7 +447,7 @@ contract PlasmaParent {
 
 // ----------------------------------
 
-    function() external payable{
+    function() external payable {
         address callee = buyoutProcessorContract;
         assembly {
             let memoryPointer := mload(0x40)

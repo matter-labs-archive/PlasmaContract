@@ -22,8 +22,8 @@ contract PlasmaBuyoutProcessor {
 
     uint256 public depositCounter;
 
-    uint256 public DepositWithdrawCollateral = 50000000000000000;
-    uint256 public WithdrawCollateral = 50000000000000000;
+    uint256 public constant DepositWithdrawCollateral = 50000000000000000;
+    uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
     uint256 public constant InputChallangesDelay = (72 hours);
     uint256 public constant OutputChallangesDelay = (72 hours);
@@ -102,7 +102,7 @@ contract PlasmaBuyoutProcessor {
             size := extcodesize(_for)
         }
         if (size > 0) {
-            revert();
+            revert("No deposits to the contracts!");
         }
         uint256 depositIndex = depositCounter;
         DepositRecord storage record = depositRecords[depositIndex];

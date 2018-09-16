@@ -31,9 +31,6 @@ contract('Deposit withdraw functions', async (accounts) => {
     let queue;
     let plasma;
     let storage;
-    let challenger;
-    let buyoutProcessor;
-    let limboExitGame;
     let firstHash;
 
     const operator = accounts[0];
@@ -45,13 +42,13 @@ contract('Deposit withdraw functions', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
+        ({plasma, firstHash, queue, storage} = result);
     })
 
     it('should emit deposit event', async () => {
         const depositAmount = 42;
         // const depositedBefore = await plasma.totalAmountDeposited();
-        let receipt = await buyoutProcessor.deposit({from: alice, value: depositAmount});
+        let receipt = await plasma.deposit({from: alice, value: depositAmount});
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
         const depositIndex = new web3.BigNumber(0);
         // const depositedAfter = await plasma.totalAmountDeposited();
@@ -60,49 +57,49 @@ contract('Deposit withdraw functions', async (accounts) => {
     });
 
     it('should allow deposit withdraw process', async () => {
-        let receipt = await buyoutProcessor.deposit({from: alice, value: 314});
+        let receipt = await plasma.deposit({from: alice, value: 314});
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
         const depositIndex = new web3.BigNumber(0);
-        const depositWithdrawCollateral = await buyoutProcessor.DepositWithdrawCollateral();
-        receipt = await challenger.startDepositWithdraw(depositIndex.toString(), {from: alice, value: depositWithdrawCollateral.toString()});
+        const depositWithdrawCollateral = await plasma.DepositWithdrawCollateral();
+        receipt = await plasma.startDepositWithdraw(depositIndex.toString(), {from: alice, value: depositWithdrawCollateral.toString()});
         await testUtils.expectEvents(plasma, receipt.receipt.blockNumber, 'DepositWithdrawStartedEvent', {_depositIndex: depositIndex.toNumber()});
     });
 
     it('should require bond for deposit withdraw start', async () => {
-        const receipt = await buyoutProcessor.deposit({from: alice, value: 314});
+        const receipt = await plasma.deposit({from: alice, value: 314});
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
         const depositIndex = new web3.BigNumber(0);
-        const promise = challenger.startDepositWithdraw(depositIndex, {from: alice, value: 0});
+        const promise = plasma.startDepositWithdraw(depositIndex, {from: alice, value: 0});
         // Will also fail if contract's bond constant is set to 0
         await expectThrow(promise);
     });
 
     it('should not allow early deposit withdraw', async () => {
-        let receipt = await buyoutProcessor.deposit({from: alice, value: 314});
+        let receipt = await plasma.deposit({from: alice, value: 314});
         const depositIndex = new web3.BigNumber(0);
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
 
-        const depositWithdrawCollateral = await buyoutProcessor.DepositWithdrawCollateral();
-        await challenger.startDepositWithdraw(depositIndex.toString(), {from: alice, value: depositWithdrawCollateral.toString()});
+        const depositWithdrawCollateral = await plasma.DepositWithdrawCollateral();
+        await plasma.startDepositWithdraw(depositIndex.toString(), {from: alice, value: depositWithdrawCollateral.toString()});
 
-        const promise = challenger.finalizeDepositWithdraw(depositIndex.toString(), {from: alice});
+        const promise = plasma.finalizeDepositWithdraw(depositIndex.toString(), {from: alice});
         await expectThrow(promise);
     });
 
     it('should allow successful deposit withdraw', async () => {
         const depositAmount = new BN(314);
-        let receipt = await buyoutProcessor.deposit({from: alice, value: depositAmount.toString()});
+        let receipt = await plasma.deposit({from: alice, value: depositAmount.toString()});
         const depositIndex = new web3.BigNumber(0);
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
 
-        const depositWithdrawCollateral = await buyoutProcessor.DepositWithdrawCollateral();
-        await challenger.startDepositWithdraw(depositIndex.toString(), {from: alice, value: depositWithdrawCollateral.toString()});
+        const depositWithdrawCollateral = await plasma.DepositWithdrawCollateral();
+        await plasma.startDepositWithdraw(depositIndex.toString(), {from: alice, value: depositWithdrawCollateral.toString()});
 
-        const delay = await buyoutProcessor.DepositWithdrawDelay();
+        const delay = await plasma.DepositWithdrawDelay();
         await increaseTime(delay.toNumber() + 1);
         const balanceBefore = await web3.eth.getBalance(alice);
         // const depositedBefore = await plasma.totalAmountDeposited();
-        receipt = await challenger.finalizeDepositWithdraw(depositIndex.toString(), {from: alice, gasPrice: web3.eth.gasPrice});
+        receipt = await plasma.finalizeDepositWithdraw(depositIndex.toString(), {from: alice, gasPrice: web3.eth.gasPrice});
         // const depositedAfter = await plasma.totalAmountDeposited();
         const balanceAfter = await web3.eth.getBalance(alice);
         await testUtils.expectEvents(plasma, receipt.receipt.blockNumber, 'DepositWithdrawCompletedEvent', {_depositIndex: depositIndex.toNumber()});
@@ -118,7 +115,7 @@ contract('Deposit withdraw functions', async (accounts) => {
 
     it('should respond to deposit withdraw challenge', async () => {
         const depositAmount = new BN(42);
-        let receipt = await buyoutProcessor.deposit({from: alice, value: depositAmount.toString()});
+        let receipt = await plasma.deposit({from: alice, value: depositAmount.toString()});
         const depositIndex = new web3.BigNumber(0);
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
 
@@ -137,11 +134,11 @@ contract('Deposit withdraw functions', async (accounts) => {
         await testUtils.submitBlock(plasma, block);
         const proof = block.merkleTree.getProof(0, true);
 
-        const depositWithdrawCollateral = await buyoutProcessor.DepositWithdrawCollateral();
-        await challenger.startDepositWithdraw(depositIndex, {from: alice, value: depositWithdrawCollateral});
+        const depositWithdrawCollateral = await plasma.DepositWithdrawCollateral();
+        await plasma.startDepositWithdraw(depositIndex, {from: alice, value: depositWithdrawCollateral});
 
         const balanceBefore = await web3.eth.getBalance(bob);
-        receipt = await challenger.challengeDepositWithdraw(depositIndex.toString(), 1, ethUtil.bufferToHex(tx.rlpEncode()), ethUtil.bufferToHex(proof), {from: bob, gasPrice: web3.eth.gasPrice});
+        receipt = await plasma.challengeDepositWithdraw(depositIndex.toString(), 1, ethUtil.bufferToHex(tx.rlpEncode()), ethUtil.bufferToHex(proof), {from: bob, gasPrice: web3.eth.gasPrice});
         const balanceAfter = await web3.eth.getBalance(bob);
         await testUtils.expectEvents(plasma, receipt.receipt.blockNumber, 'DepositWithdrawChallengedEvent', {_depositIndex: depositIndex.toNumber()});
 
@@ -169,7 +166,7 @@ contract('Deposit withdraw functions', async (accounts) => {
         const proof = block.merkleTree.getProof(0, true);
 
         const balanceBefore = await web3.eth.getBalance(bob);
-        const receipt = await challenger.proveInvalidDeposit(1, ethUtil.bufferToHex(tx.rlpEncode()),
+        const receipt = await plasma.proveInvalidDeposit(1, ethUtil.bufferToHex(tx.rlpEncode()),
             ethUtil.bufferToHex(proof), {from: bob, gasPrice: web3.eth.gasPrice});
         const balanceAfter = await web3.eth.getBalance(bob);
 
@@ -185,7 +182,7 @@ contract('Deposit withdraw functions', async (accounts) => {
 
     it('should stop Plasma on double funding', async () => {
         const depositAmount = new BN(42);
-        let receipt = await buyoutProcessor.deposit({from: alice, value: depositAmount.toString()});
+        let receipt = await plasma.deposit({from: alice, value: depositAmount.toString()});
         const depositIndex = new web3.BigNumber(0);
         // const depositIndex = testUtils.depositIndex(receipt.receipt.blockNumber);
 
@@ -217,7 +214,7 @@ contract('Deposit withdraw functions', async (accounts) => {
         const proof2 = block.merkleTree.getProof(1, true);
 
         const balanceBefore = await web3.eth.getBalance(bob);
-        receipt = await challenger.proveDoubleFunding(
+        receipt = await plasma.proveDoubleFunding(
             1, ethUtil.bufferToHex(tx1.rlpEncode()), ethUtil.bufferToHex(Buffer.concat(proof1)),
             1, ethUtil.bufferToHex(tx2.rlpEncode()), ethUtil.bufferToHex(Buffer.concat(proof2)),
             {from: bob, gasPrice: web3.eth.gasPrice});

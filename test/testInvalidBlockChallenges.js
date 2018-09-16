@@ -30,9 +30,6 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
     let queue;
     let plasma;
     let storage;
-    let challenger;
-    let buyoutProcessor;
-    let limboExitGame;
     let firstHash;
 
     const operator = accounts[0];
@@ -44,7 +41,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
+        ({plasma, firstHash, queue, storage} = result);
     })
 
     it('Transaction in block references the future', async () => {
@@ -85,7 +82,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
         assert(bl[2] == ethUtil.bufferToHex(block.header.merkleRootHash));
         // let root = await storage.getMerkleRoot(1);
         // assert(root = ethUtil.bufferToHex(ethUtil.hashPersonalMessage(reencodedTX)));
-        submissionReceipt = await challenger.proveReferencingInvalidBlock(1, 0, ethUtil.bufferToHex(reencodedTX), ethUtil.bufferToHex(proof));
+        submissionReceipt = await plasma.proveReferencingInvalidBlock(1, 0, ethUtil.bufferToHex(reencodedTX), ethUtil.bufferToHex(proof));
         const plasmaIsStopped = await plasma.plasmaErrorFound();
         assert(plasmaIsStopped);
     })
@@ -174,7 +171,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
                             // bytes _originatingMerkleProof,
                             // uint256 _inputOfInterest
                             
-        submissionReceipt = await challenger.proveBalanceOrOwnershipBreakingBetweenInputAndOutput(
+        submissionReceipt = await plasma.proveBalanceOrOwnershipBreakingBetweenInputAndOutput(
             2, ethUtil.bufferToHex(reencodedTX2), ethUtil.bufferToHex(proof2),
             1, ethUtil.bufferToHex(reencodedTX), ethUtil.bufferToHex(proof),
             0);
@@ -266,7 +263,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
                             // bytes _originatingMerkleProof,
                             // uint256 _inputOfInterest
                             
-        submissionReceipt = await challenger.proveBalanceOrOwnershipBreakingBetweenInputAndOutput(
+        submissionReceipt = await plasma.proveBalanceOrOwnershipBreakingBetweenInputAndOutput(
             2, ethUtil.bufferToHex(reencodedTX2), ethUtil.bufferToHex(proof2),
             1, ethUtil.bufferToHex(reencodedTX), ethUtil.bufferToHex(proof),
             0);
@@ -376,7 +373,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
         //     bytes _plasmaTransaction2,
         //     bytes _merkleProof2)
                             
-        submissionReceipt = await challenger.proveDoubleSpend(
+        submissionReceipt = await plasma.proveDoubleSpend(
             2, 0, ethUtil.bufferToHex(reencodedTX2), ethUtil.bufferToHex(proof2),
             2, 0, ethUtil.bufferToHex(reencodedTX3), ethUtil.bufferToHex(proof3));
         const plasmaIsStopped = await plasma.plasmaErrorFound();
@@ -385,7 +382,7 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
 
     it('UTXO was successfully withdrawn and than spent in Plasma', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -467,13 +464,12 @@ contract('PlasmaParent invalid block challenges', async (accounts) => {
         //     uint8 _inputNumber,
         //     bytes22 _partialHash)
 
-        submissionReceipt = await challenger.proveSpendAndWithdraw(2,
+        submissionReceipt = await plasma.proveSpendAndWithdraw(2,
             ethUtil.bufferToHex(proofObject2.tx.serialize()),
             ethUtil.bufferToHex(proofObject2.proof),
             ethUtil.bufferToHex(tx.serialize()),
             ethUtil.bufferToHex(proof),
-            0,
-            exitRecordHash, {from: bob});
+            0, {from: bob});
         const plasmaIsStopped = await plasma.plasmaErrorFound();
         assert(plasmaIsStopped);
 

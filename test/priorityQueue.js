@@ -21,19 +21,9 @@ const {
     TxTypeSplit} = require("../lib/Tx/RLPtx.js");
 
 contract('Transaction deserialization tester', async (accounts) => {
-
-    const operatorAddress = accounts[0];
-    const operatorKey = keys[0];
     let priorityQueue;
 
     const operator = accounts[0];
-
-    const alice    = addresses[2];
-    const aliceKey = keys[2];
-    const bob      = addresses[3];
-    const bobKey = keys[3];
-    
-    let firstHash;
 
     beforeEach(async () => {
         priorityQueue = await PriorityQueue.new({from: operator});

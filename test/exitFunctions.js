@@ -31,9 +31,6 @@ contract('PlasmaParent', async (accounts) => {
     let queue;
     let plasma;
     let storage;
-    let challenger;
-    let buyoutProcessor;
-    let limboExitGame;
     let firstHash;
 
     const operator = accounts[0];
@@ -45,12 +42,12 @@ contract('PlasmaParent', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
+        ({plasma, firstHash, queue, storage} = result);
     })
 
     it('should exit from the huge block', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100000000000000"});
+        await plasma.deposit({from: alice, value: "100000000000000"});
 
         const numToCreate = 1000;
         const allTXes = [];
@@ -129,7 +126,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit from the deposit transaction', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -194,7 +191,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should not allow exit from non-owner of the output', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -224,7 +221,7 @@ contract('PlasmaParent', async (accounts) => {
     
     it('should exit and challenge after', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -317,7 +314,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit and challenge the input', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -421,7 +418,7 @@ contract('PlasmaParent', async (accounts) => {
 
     it('should exit and challenge by showing doublespent input', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -469,10 +466,10 @@ contract('PlasmaParent', async (accounts) => {
                 aliceKey
         )
 
-        const block2 = createBlock(2, 1, nextHash, [spendingTX, doubleSpendingTX],  operatorKey)
+        const block2 = createBlock(2, 1, nextHash, [doubleSpendingTX, spendingTX],  operatorKey)
         await testUtils.submitBlock(plasma, block2);
 
-        let proofObject = block2.getProofForTransactionByNumber(0);
+        let proofObject = block2.getProofForTransactionByNumber(1);
         let {proof, tx} = proofObject;
         let submissionReceipt = await plasma.startExit(
             2, 0, ethUtil.bufferToHex(tx.serialize()), ethUtil.bufferToHex(proof),
@@ -491,7 +488,7 @@ contract('PlasmaParent', async (accounts) => {
         assert(exitRecord[1].toNumber() === 100)
         assert(exitRecord[2] === alice);
         assert(exitRecord[4].toString(10) === "2")
-        assert(exitRecord[5].toNumber() === 0)
+        assert(exitRecord[5].toNumber() === 1)
         assert(exitRecord[6].toNumber() === 0)
         assert(exitRecord[7] === true)
         assert(exitRecord[8] === false)
@@ -499,7 +496,8 @@ contract('PlasmaParent', async (accounts) => {
         assert(txHash === txHashFromEvent);
         assert(txData === txDataFromEvent);
 
-        let proofObject2 = block2.getProofForTransactionByNumber(1);
+        // double-spending tx happens before spending tx
+        let proofObject2 = block2.getProofForTransactionByNumber(0);
 
         // function challengeNormalExitByShowingAnInputDoubleSpend(
         //     bytes _originalTransaction,
@@ -529,7 +527,7 @@ contract('PlasmaParent', async (accounts) => {
         assert(exitRecord[1].toNumber() === 100)
         assert(exitRecord[2] === alice);
         assert(exitRecord[4].toString(10) === "2")
-        assert(exitRecord[5].toNumber() === 0)
+        assert(exitRecord[5].toNumber() === 1)
         assert(exitRecord[6].toNumber() === 0)
         assert(exitRecord[7] === false)
         assert(exitRecord[8] === false)

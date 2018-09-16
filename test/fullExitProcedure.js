@@ -27,9 +27,6 @@ contract('PlasmaParent exit procedure', async (accounts) => {
     let queue;
     let plasma;
     let storage;
-    let challenger;
-    let buyoutProcessor;
-    let limboExitGame;
     let firstHash;
 
     const operator = accounts[0];
@@ -41,12 +38,12 @@ contract('PlasmaParent exit procedure', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
+        ({plasma, firstHash, queue, storage} = result);
     })
 
     it('Simulate exit procedure', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -132,7 +129,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
 
     it('Simulate exit procedure with invalid (spent) transaction in queue before valid', async () => {
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 

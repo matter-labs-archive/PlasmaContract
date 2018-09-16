@@ -33,10 +33,11 @@ module.exports = function(deployer, network, accounts) {
 
         // await deployer.deploy(LimboExitGame, {from: operator});
         // let limboExitGame = await LimboExitGame.deployed();
-        let limboExitGame = challenger; // for now
+        // let limboExitGame = challenger; // for now
 
-        // setDelegates(address _buyouts, address _challenger, address _limboExit) 
-        await parent.setDelegates(buyoutProcessor.address, challenger.address, limboExitGame.address, {from: operator})
+        await parent.allowDeposits(buyoutProcessor.address, {from: operator})
+        await parent.allowChallenges(challenger.address, {from: operator});
+        // await parent.allowLimboExits(limboExitGame.address, {from: operator})
         await parent.setOperator(blockSignerAddress, 2, {from: operator});
 
         const canSignBlocks = await storage.canSignBlocks(blockSignerAddress);
@@ -45,18 +46,21 @@ module.exports = function(deployer, network, accounts) {
         const buyoutProcessorAddress = await parent.buyoutProcessorContract();
         assert(buyoutProcessorAddress === buyoutProcessor.address);
 
-        const limboExitsAddress = await parent.limboExitContract();
-        assert(limboExitsAddress === limboExitGame.address);
-
         const challengesAddress = await parent.challengesContract();
         assert(challengesAddress === challenger.address);
+
+        // const limboExitsAddress = await parent.limboExitContract();
+        // assert(limboExitsAddress === limboExitGame.address);
 
         let parentAbi = parent.abi;
         let buyoutAbi = buyoutProcessor.abi;
         let challengerAbi = challenger.abi;
-        let limboExitAbi = limboExitGame.abi;
+        // let limboExitAbi = limboExitGame.abi;
 
-        const mergedABI = _.uniqBy([...parentAbi, ...buyoutAbi, ...challengerAbi, ...limboExitAbi], a => a.name || a.type);
+
+        const mergedABI = _.uniqBy([...parentAbi, ...buyoutAbi, ...challengerAbi], a => a.name || a.type);
+
+        // const mergedABI = _.uniqBy([...parentAbi, ...buyoutAbi, ...challengerAbi, ...limboExitAbi], a => a.name || a.type);
         // due to async contract address is not saved in not saved in json by truffle
         // so we need to generate details file from within migration
 	    let details = {error: false, address: parent.address, abi: mergedABI};

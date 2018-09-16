@@ -22,8 +22,8 @@ contract PlasmaChallenges {
 
     uint256 public depositCounter;
 
-    uint256 public DepositWithdrawCollateral = 50000000000000000;
-    uint256 public WithdrawCollateral = 50000000000000000;
+    uint256 public constant DepositWithdrawCollateral = 50000000000000000;
+    uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
     uint256 public constant InputChallangesDelay = (72 hours);
     uint256 public constant OutputChallangesDelay = (72 hours);
@@ -148,10 +148,12 @@ contract PlasmaChallenges {
         returns (bool success) {
         DepositRecord storage record = depositRecords[depositIndex];
         require(record.status == DepositStatusWithdrawStarted);
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(included);
-        TX.txNumberInBlock = uint32(txNumber);
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
+        // PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        // (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        // require(included);
+        // TX.txNumberInBlock = uint32(txNumber);
+
         require(TX.txType == TxTypeFund);
         require(blockStorage.isOperator(TX.sender));
         PlasmaTransactionLibrary.TransactionOutput memory output = TX.outputs[0];
@@ -208,8 +210,7 @@ contract PlasmaChallenges {
         bytes _merkleProof,
         bytes _originatingPlasmaTransaction,
         bytes _originatingMerkleProof,
-        uint8 _inputNumber,
-        bytes22 _partialHash)
+        uint8 _inputNumber)
     public returns(bool success) {
         PlasmaTransactionLibrary.PlasmaTransaction memory spendingTX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
         PlasmaTransactionLibrary.TransactionInput memory spendingInput = spendingTX.inputs[_inputNumber];
@@ -235,11 +236,13 @@ contract PlasmaChallenges {
         bytes _plasmaTransaction,
         bytes _merkleProof) 
     public returns (bool success) {
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(included);
-        TX.txNumberInBlock = uint32(txNumber);
-        require(isWellFormedDecodedTransaction(TX));
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
+
+        // PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        // (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        // require(included);
+        // TX.txNumberInBlock = uint32(txNumber);
+        // require(isWellFormedDecodedTransaction(TX));
         require(TX.txType == TxTypeFund);
         PlasmaTransactionLibrary.TransactionOutput memory output = TX.outputs[0];
         PlasmaTransactionLibrary.TransactionInput memory input = TX.inputs[0];
@@ -291,11 +294,13 @@ contract PlasmaChallenges {
                             uint8 _plasmaInputNumberInTx,
                             bytes _plasmaTransaction,
                             bytes _merkleProof) public returns (bool success) {
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(included);
-        TX.txNumberInBlock = uint32(txNumber);
-        require(TX.isWellFormed);
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
+
+        // PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        // (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        // require(included);
+        // TX.txNumberInBlock = uint32(txNumber);
+        // require(TX.isWellFormed);
         require(TX.inputs[_plasmaInputNumberInTx].blockNumber >= _plasmaBlockNumber);
         setErrorAndLastFoundBlock(_plasmaBlockNumber, true, msg.sender);
         return true;
@@ -364,15 +369,18 @@ contract PlasmaChallenges {
         bytes _originatingMerkleProof,
         uint256 _inputOfInterest)
     public returns(bool success) {
-        uint256 idx = 0;
-        PlasmaTransactionLibrary.PlasmaTransaction memory spendingTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        PlasmaTransactionLibrary.PlasmaTransaction memory originatingTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_originatingPlasmaTransaction);
-        (success, idx) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_originatingPlasmaBlockNumber), _originatingPlasmaTransaction, _originatingMerkleProof);
-        require(success);
-        originatingTX.txNumberInBlock = uint32(idx);
-        (success, idx) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(success);
-        spendingTX.txNumberInBlock = uint32(idx);
+        // uint256 idx = 0;
+        PlasmaTransactionLibrary.PlasmaTransaction memory spendingTX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
+        PlasmaTransactionLibrary.PlasmaTransaction memory originatingTX = checkForValidityAndInclusion(_originatingPlasmaBlockNumber, _originatingPlasmaTransaction, _originatingMerkleProof);
+
+        // PlasmaTransactionLibrary.PlasmaTransaction memory spendingTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        // PlasmaTransactionLibrary.PlasmaTransaction memory originatingTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_originatingPlasmaTransaction);
+        // (success, idx) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_originatingPlasmaBlockNumber), _originatingPlasmaTransaction, _originatingMerkleProof);
+        // require(success);
+        // originatingTX.txNumberInBlock = uint32(idx);
+        // (success, idx) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        // require(success);
+        // spendingTX.txNumberInBlock = uint32(idx);
         success = checkRightfulInputOwnershipAndBalance(spendingTX, originatingTX, _originatingPlasmaBlockNumber, _inputOfInterest);
         require(!success);
         setErrorAndLastFoundBlock(_plasmaBlockNumber, true, msg.sender);
@@ -386,30 +394,27 @@ contract PlasmaChallenges {
         uint256 _inputNumber) 
     internal view returns (bool isValid) {
 
-        require(isWellFormedDecodedTransaction(_spendingTX));
-        require(isWellFormedDecodedTransaction(_originatingTX));
+        // require(isWellFormedDecodedTransaction(_spendingTX));
+        // require(isWellFormedDecodedTransaction(_originatingTX));
+
         PlasmaTransactionLibrary.TransactionInput memory input = _spendingTX.inputs[_inputNumber];
         require(input.blockNumber == _originatingPlasmaBlockNumber);
         require(input.txNumberInBlock == _originatingTX.txNumberInBlock);
         if (input.outputNumberInTX >= _originatingTX.outputs.length) {
             return false;
         }
-        PlasmaTransactionLibrary.TransactionOutput memory outputOfInterest = _originatingTX.outputs[uint256(input.outputNumberInTX)];
-        if (outputOfInterest.amount != input.amount) {
-            return false;
-        }
-        if (_spendingTX.txType == TxTypeSplit) {
+        if (_spendingTX.txType == TxTypeSplit || _spendingTX.txType == TxTypeMerge) {
             if (outputOfInterest.recipient != _spendingTX.sender) {
                 return false;
             }
-        } else if (_spendingTX.txType == TxTypeMerge) {
-            if (outputOfInterest.recipient != _spendingTX.sender) {
+            PlasmaTransactionLibrary.TransactionOutput memory outputOfInterest = _originatingTX.outputs[uint256(input.outputNumberInTX)];
+            if (outputOfInterest.amount != input.amount) {
                 return false;
             }
         } else if (_spendingTX.txType == TxTypeFund) {
             return true;
         }
-        return true;
+        return false;
     }
 
 
@@ -467,12 +472,13 @@ contract PlasmaChallenges {
         bytes _plasmaTransaction,
         bytes _merkleProof) 
         internal view returns (address signer, PlasmaTransactionLibrary.TransactionInput memory input, uint256 index) {
-        
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(included);
-        TX.txNumberInBlock = uint32(txNumber);
-        require(isWellFormedDecodedTransaction(TX));
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
+
+        // PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        // (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        // require(included);
+        // TX.txNumberInBlock = uint32(txNumber);
+        // require(isWellFormedDecodedTransaction(TX));
         require(TX.txType != TxTypeFund);
         require(TX.sender != address(0));
         require(TX.inputs.length > _inputNumber);
@@ -486,12 +492,14 @@ contract PlasmaChallenges {
         bytes _plasmaTransaction,
         bytes _merkleProof) 
         internal view returns (address signer, uint256 depositIndex, uint256 outputIndex) {
+        
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
 
-        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
-        (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
-        require(included);
-        TX.txNumberInBlock = uint32(txNumber);
-        require(isWellFormedDecodedTransaction(TX));
+        // PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
+        // (bool included, uint256 txNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(blockStorage.getMerkleRoot(_plasmaBlockNumber), _plasmaTransaction, _merkleProof);
+        // require(included);
+        // TX.txNumberInBlock = uint32(txNumber);
+        // require(isWellFormedDecodedTransaction(TX));
         require(TX.txType == TxTypeFund);
         PlasmaTransactionLibrary.TransactionInput memory auxInput = TX.inputs[0];
         require(auxInput.blockNumber == 0);

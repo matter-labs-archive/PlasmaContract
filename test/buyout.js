@@ -28,9 +28,6 @@ contract('Plasma buyout procedure', async (accounts) => {
     let queue;
     let plasma;
     let storage;
-    let challenger;
-    let buyoutProcessor;
-    let limboExitGame;
     let firstHash;
 
     const operator = accounts[0];
@@ -42,14 +39,14 @@ contract('Plasma buyout procedure', async (accounts) => {
     
     beforeEach(async () => {
         const result = await deploy(operator, operatorAddress);
-        ({plasma, firstHash, challenger, limboExitGame, buyoutProcessor, queue, storage} = result);
+        ({plasma, firstHash, queue, storage} = result);
     })
 
     it('should send an offer and accept it', async () => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -91,7 +88,7 @@ contract('Plasma buyout procedure', async (accounts) => {
 
         //now lets offer a buyoyt for half of the amount
         // offerOutputBuyout(bytes22 _index)
-        submissionReceipt = await buyoutProcessor.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50})
+        submissionReceipt = await plasma.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50})
         assert(submissionReceipt.logs.length == 1);
         let offer = await plasma.exitBuyoutOffers(exitRecordHash);
         assert(offer[1] === bob);
@@ -99,7 +96,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         assert(!offer[2]);
 
         let oldBalanceAlice = await web3.eth.getBalance(alice);
-        submissionReceipt = await buyoutProcessor.acceptBuyoutOffer(exitRecordHash, {from: alice, gasPrice: 0});
+        submissionReceipt = await plasma.acceptBuyoutOffer(exitRecordHash, {from: alice, gasPrice: 0});
         let newBalanceAlice = await web3.eth.getBalance(alice);
 
         assert(newBalanceAlice.gt(oldBalanceAlice));
@@ -126,7 +123,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -168,7 +165,7 @@ contract('Plasma buyout procedure', async (accounts) => {
 
         //now lets offer a buyoyt for half of the amount
         // offerOutputBuyout(bytes22 _index)
-        submissionReceipt = await buyoutProcessor.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50})
+        submissionReceipt = await plasma.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50})
         assert(submissionReceipt.logs.length == 1);
         let offer = await plasma.exitBuyoutOffers(exitRecordHash);
         assert(offer[1] === bob);
@@ -176,11 +173,11 @@ contract('Plasma buyout procedure', async (accounts) => {
         assert(!offer[2]);
 
         let oldBalanceBob = await web3.eth.getBalance(bob);
-        submissionReceipt = await buyoutProcessor.returnExpiredBuyoutOffer(exitRecordHash, {from: bob, gasPrice: 0});
+        submissionReceipt = await plasma.returnExpiredBuyoutOffer(exitRecordHash, {from: bob, gasPrice: 0});
         let newBalanceBob = await web3.eth.getBalance(bob);
 
         assert(newBalanceBob.gt(oldBalanceBob));
-        await expectThrow(buyoutProcessor.acceptBuyoutOffer(exitRecordHash, {from: alice, gasPrice: 0}));
+        await expectThrow(plasma.acceptBuyoutOffer(exitRecordHash, {from: alice, gasPrice: 0}));
         offer = await plasma.exitBuyoutOffers(exitRecordHash);
         assert(offer[0].toString(10) === "0");
         assert(!offer[2]);
@@ -201,7 +198,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -243,7 +240,7 @@ contract('Plasma buyout procedure', async (accounts) => {
 
         //now lets offer a buyoyt for half of the amount
         // offerOutputBuyout(bytes22 _index)
-        submissionReceipt = await buyoutProcessor.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50})
+        submissionReceipt = await plasma.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50})
         assert(submissionReceipt.logs.length == 1);
         let offer = await plasma.exitBuyoutOffers(exitRecordHash);
         assert(offer[1] === bob);
@@ -255,14 +252,14 @@ contract('Plasma buyout procedure', async (accounts) => {
 
         submissionReceipt = await plasma.finalizeExits(1, {from: operator});
 
-        await expectThrow(buyoutProcessor.acceptBuyoutOffer(exitRecordHash, {from: alice, gasPrice: 0}));
+        await expectThrow(plasma.acceptBuyoutOffer(exitRecordHash, {from: alice, gasPrice: 0}));
     })
 
     it('should not allow to offer for already exited transaction', async () => {
         // deposit to prevent stopping
 
         const withdrawCollateral = await plasma.WithdrawCollateral();
-        await buyoutProcessor.deposit({from: alice, value: "100"});
+        await plasma.deposit({from: alice, value: "100"});
 
         const allTXes = [];
         const fundTX = createTransaction(TxTypeFund, 0, 
@@ -306,7 +303,7 @@ contract('Plasma buyout procedure', async (accounts) => {
         await increaseTime(delay.toNumber() + 1);
 
         submissionReceipt = await plasma.finalizeExits(1, {from: operator});
-        await expectThrow(buyoutProcessor.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50}))
+        await expectThrow(plasma.offerOutputBuyout(exitRecordHash, bob, {from: bob, value: 50}))
     })
     
 })
