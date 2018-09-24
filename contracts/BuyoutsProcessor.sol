@@ -151,7 +151,6 @@ contract PlasmaBuyoutProcessor {
     }
 
     function returnExpiredBuyoutOffer(bytes22 _index) public returns (bool success) {
-        // WithdrawRecord storage record = withdrawRecords[_withdrawIndex];
         ExitBuyoutOffer storage offer = exitBuyoutOffers[_index];
         require(!offer.accepted);
         // require(record.status != WithdrawStatusStarted || (block.timestamp >= record.timestamp + WithdrawDelay));
@@ -160,6 +159,36 @@ contract PlasmaBuyoutProcessor {
         require(msg.sender == oldFrom);
         delete exitBuyoutOffers[_index];
         oldFrom.transfer(oldAmount);
+        return true;
+    }
+
+    function publishPreacceptedBuyout(
+        bytes22 _index,
+        uint256 _amount,
+        address _beneficiary,
+        uint8 v,
+        bytes32 r, 
+        bytes32 s
+    ) public payable returns (bool success) {
+        StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_index];
+        require(exitRecord.isValid, "Exit should be valid to accept a buyout");
+        ExitBuyoutOffer storage offer = exitBuyoutOffers[_index];
+        require(!offer.accepted, "Offer should not be prefiously accepted");
+        bytes memory PersonalMessagePrefixBytes = "\x19Ethereum Signed Message:\n74"; // 22 of index + 32 of amount + 20 of address
+        address signer = ecrecover(keccak256(abi.encodePacked(PersonalMessagePrefixBytes, _index, _amount, _beneficiary)), v, r, s);
+        require(signer == exitRecord.owner, "Acceptance signer should be record owner");
+        require(msg.value >= _amount, "Need to send at least the agreed amount");
+        address oldFrom = offer.from;
+        uint256 oldAmount = offer.amount;
+        require(msg.value > oldAmount, "Should send more than any previous offer");
+        offer.from = _beneficiary;
+        offer.amount = msg.value;
+        if (oldFrom != address(0)) {
+            oldFrom.transfer(oldAmount);
+        }
+        offer.accepted = true;
+        exitRecord.owner.transfer(_amount);
+        emit ExitBuyoutAccepted(_index, _beneficiary);
         return true;
     }
 
