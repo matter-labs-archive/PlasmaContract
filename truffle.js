@@ -2,18 +2,7 @@ const env = process.env;
 
 // don't load .env file in prod
 
-
-// const Web3 = require('web3');
-// const web3 = new Web3();
-
-
-// Using the IPC provider in node.js
-// var net = require('net');
-// var web3 = new Web3('/Users/restereo/Library/Ethereum/geth.ipc', net); // mac os path
-
 module.exports = {
-  // See <http://truffleframework.com/docs/advanced/configuration>
-  // to customize your Truffle configuration!
     networks: {
 	    mainnet: {
 		    provider: function() {
@@ -35,7 +24,8 @@ module.exports = {
                 return new WalletProvider(wallet, "https://rinkeby.infura.io/" + env.INFURA_TOKEN)
             },
             network_id: 4,
-            gasPrice: 20000000000
+            gasPrice: 1000000000
+            // gas: 7000000,
         },
 	    rinkeby2: {
 		    provider: function() {

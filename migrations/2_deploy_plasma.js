@@ -8,10 +8,26 @@ const BuyoutProcessor = artifacts.require("PlasmaBuyoutProcessor");
 const assert = require('assert');
 const _ = require('lodash');
 
-const blockSignerAddress = "0x627306090abab3a6e1400e9345bc60c78a8bef57"
+let blockSignerAddress = "0x627306090abab3a6e1400e9345bc60c78a8bef57"
 
 module.exports = function(deployer, network, accounts) {
+    
     const operator = accounts[0];
+    try {
+        let env = process.env;
+        if (env.NODE_ENV !== 'production') {
+            require('dotenv').load();
+        }
+        const blockSignerAddressCandidate = env.BLOCK_SIGNER_ADDRESS
+        if (blockSignerAddressCandidate !== undefined && blockSignerAddressCandidate !== "") {
+            blockSignerAddress = blockSignerAddressCandidate;
+        }
+    }
+    catch(error) {
+        console.log(error)
+    }
+    console.log("Block signer = " + blockSignerAddress);
+
     (async () => {
         await deployer.deploy(BlockStorage, {from: operator});
         let storage = await BlockStorage.deployed();
