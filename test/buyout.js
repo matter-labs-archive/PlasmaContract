@@ -119,6 +119,98 @@ contract('Plasma buyout procedure', async (accounts) => {
         assert(newBalanceAlice.eq(oldBalanceAlice));
     })
 
+
+    it('should send a presigned offer', async () => {
+        // deposit to prevent stopping
+
+        const withdrawCollateral = await plasma.WithdrawCollateral();
+        await plasma.deposit({from: alice, value: "100"});
+
+        const allTXes = [];
+        const fundTX = createTransaction(TxTypeFund, 0, 
+            [{
+                blockNumber: 0,
+                txNumberInBlock: 0,
+                outputNumberInTransaction: 0,
+                amount: 0
+            }],
+            [{
+                amount: 100,
+                to: alice
+            }],
+                operatorKey
+        )
+        allTXes.push(fundTX)
+        const block = createBlock(1, allTXes.length, firstHash, allTXes,  operatorKey)
+        await testUtils.submitBlock(plasma, block);
+
+        const proofObject = block.getProofForTransactionByNumber(0);
+        const {proof, tx} = proofObject;
+        let submissionReceipt = await plasma.startExit(
+            1, 0, ethUtil.bufferToHex(tx.serialize()), ethUtil.bufferToHex(proof),
+            {from: alice, value: withdrawCollateral}
+        )
+
+        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecord = await plasma.exitRecords(exitRecordHash);
+        const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
+
+        assert(exitRecord[0] === txHash);
+        assert(exitRecord[1].toNumber() === 100)
+        assert(exitRecord[2] === alice);
+        assert(exitRecord[4].toString(10) === "1")
+        assert(exitRecord[5].toNumber() === 0)
+        assert(exitRecord[6].toNumber() === 0)
+        assert(exitRecord[7] === true)
+        assert(exitRecord[8] === false)
+
+        //now lets offer a buyoyt for half of the amount
+        // function publishPreacceptedBuyout(
+        //     bytes22 _index,
+        //     uint256 _amount,
+        //     address _beneficiary,
+        //     uint8 v,
+        //     bytes32 r, 
+        //     bytes32 s
+        // )
+
+        const valueBuffer = (new BN(50)).toBuffer("be", 32)
+        const dataToSign = Buffer.concat([ethUtil.toBuffer(exitRecordHash), valueBuffer, ethUtil.toBuffer(bob)])
+        const hashToSign = ethUtil.hashPersonalMessage(dataToSign)
+        const signature = ethUtil.ecsign(hashToSign, aliceKey)
+        const {v, r, s} = signature
+        let oldBalanceAlice = await web3.eth.getBalance(alice);
+        submissionReceipt = await plasma.publishPreacceptedBuyout(
+            exitRecordHash,
+            50,
+            bob,
+            v,
+            ethUtil.bufferToHex(r),
+            ethUtil.bufferToHex(s),
+            {from: bob, value: 50})
+        assert(submissionReceipt.logs.length == 1);
+        let offer = await plasma.exitBuyoutOffers(exitRecordHash);
+        assert(offer[1] === bob);
+        assert(offer[0].toString(10) === "50");
+        assert(offer[2]);
+
+        let newBalanceAlice = await web3.eth.getBalance(alice);
+
+        assert(newBalanceAlice.gt(oldBalanceAlice));
+        
+        const delay = await plasma.ExitDelay();
+        await increaseTime(delay.toNumber() + 1);
+
+        let oldBalanceBob = await web3.eth.getBalance(bob);
+        oldBalanceAlice = newBalanceAlice
+        submissionReceipt = await plasma.finalizeExits(1, {from: operator});
+        let newBalanceBob = await web3.eth.getBalance(bob);
+        assert(newBalanceBob.gt(oldBalanceBob));
+
+        newBalanceAlice = await web3.eth.getBalance(alice);
+        assert(newBalanceAlice.eq(oldBalanceAlice));
+    })
+
     it('should allow returning funds for expired offer', async () => {
         // deposit to prevent stopping
 
