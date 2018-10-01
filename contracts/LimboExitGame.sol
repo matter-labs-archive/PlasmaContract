@@ -79,10 +79,15 @@ contract PlasmaLimboExitGame {
     event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _partialHash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
-    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _inputNumber);
+    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _challengeNumber, uint8 _inputNumber);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
     event ExitBuyoutAccepted(bytes22 indexed _partialHash, address indexed _from);    
 // end of storage declarations --------------------------- 
+
+    modifier adjustsTime() {
+        blockStorage.incrementWeekOldCounter();
+        _;
+    }
 
     constructor() public {
     }
@@ -94,7 +99,7 @@ contract PlasmaLimboExitGame {
     function startLimboExit(
         uint8 _outputNumber,    // output being exited
         bytes _plasmaTransaction) // transaction itself
-    public payable returns(bool success) {
+    public payable adjustsTime returns(bool success) {
         // by default an exitor puts a bond on one output only
         require(msg.value == WithdrawCollateral);
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_plasmaTransaction);
@@ -135,6 +140,7 @@ contract PlasmaLimboExitGame {
                 StructuresLibrary.addOutput(limboInfo, txOutput.recipient, txOutput.amount, false);
             }
         }
+        exitQueue.insert(scratchSpace[0], exitRecordHash);
         emit TransactionPublished(transactionHash, _plasmaTransaction);
         emit LimboExitStartedEvent(msg.sender, scratchSpace[0], exitRecordHash);
         emit ExitRecordCreated(exitRecordHash);
@@ -171,7 +177,7 @@ contract PlasmaLimboExitGame {
         limboInputChallenge.from = msg.sender;
         limboInputChallenge.inputNumber = _inputNumber;
         limboInfo.inputChallenges.push(limboInputChallenge);
-        emit LimboExitChallengePublished(_index, msg.sender, _inputNumber);
+        emit LimboExitChallengePublished(_index, msg.sender, uint8(limboInfo.inputChallenges.length-1), _inputNumber);
         return true;
     }
 
@@ -189,6 +195,7 @@ contract PlasmaLimboExitGame {
         require(exitRecord.isValid == true);
         StructuresLibrary.LimboInputChallenge storage limboInputChallenge = limboExitsData[_index].inputChallenges[_challengeNumber];
         require(limboInputChallenge.from != address(0));
+        require(!limboInputChallenge.resolved);
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_exitingTransaction);
         PlasmaTransactionLibrary.PlasmaTransaction memory originatingTX = checkForValidityAndInclusion(_originatingPlasmaBlockNumber, _originatingPlasmaTransaction, _merkleProof);
         PlasmaTransactionLibrary.TransactionInput memory txInput = TX.inputs[limboInputChallenge.inputNumber];
@@ -198,6 +205,7 @@ contract PlasmaLimboExitGame {
         require(txOutput.recipient == TX.sender);
         require(txOutput.amount == txInput.amount);
         limboInputChallenge.resolved = true;
+        msg.sender.transfer(WithdrawCollateral);
         return true;
     }
 
@@ -225,6 +233,7 @@ contract PlasmaLimboExitGame {
         require(exitingInput.outputNumberInTX == includedInput.outputNumberInTX);
         require(exitingInput.amount == includedInput.amount);
         exitRecord.isValid = false;
+        payForLimboInputChallenge(_index, msg.sender);
         return true;
     }
 
@@ -249,7 +258,15 @@ contract PlasmaLimboExitGame {
         PlasmaTransactionLibrary.TransactionOutput memory txOutput = originatingTX.outputs[txInput.outputNumberInTX];
         require(txOutput.recipient != TX.sender || txOutput.amount != txInput.amount);
         exitRecord.isValid = false;
+        payForLimboInputChallenge(_index, msg.sender);
         return true;
+    }
+
+    function payForLimboInputChallenge(
+        bytes22 _index,
+        address _to
+    ) internal {
+        _to.transfer(uint256(limboExitsData[_index].outputs.length) * WithdrawCollateral);
     }
 
     function collectChallengeCollateral(
@@ -259,10 +276,19 @@ contract PlasmaLimboExitGame {
         StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_index];
         require(exitRecord.transactionRef == bytes32(0));
         require(!succesfulExits[_index]);
-        StructuresLibrary.LimboInputChallenge storage limboInputChallenge = limboExitsData[_index].inputChallenges[_challengeNumber];
-        require(limboInputChallenge.from == msg.sender);
-        delete limboExitsData[_index].inputChallenges[_challengeNumber];
-        msg.sender.transfer(WithdrawCollateral);
+        StructuresLibrary.LimboData storage limboExitInfo = limboExitsData[_index];
+        StructuresLibrary.LimboInputChallenge storage limboInputChallenge = limboExitInfo.inputChallenges[_challengeNumber];
+        address payTo = limboInputChallenge.from;
+        require(payTo != address(0));
+        delete limboExitInfo.inputChallenges[_challengeNumber];
+        uint256 challengesLength = limboExitInfo.inputChallenges.length;
+        uint256 outputBounty = 0;
+        for (uint256 i = 0; i < limboExitInfo.outputs.length; i++) {
+            if (limboExitInfo.outputs[i].isPegged) {
+                outputBounty += WithdrawCollateral / challengesLength;
+            }
+        }
+        payTo.transfer(WithdrawCollateral + outputBounty);
         return true;
     }
 
@@ -324,7 +350,7 @@ contract PlasmaLimboExitGame {
                 balance = SafeMath.add(balance, TX.inputs[counter].amount);
             }
             for (counter = 0; counter < TX.outputs.length; counter++) {
-                balance = SafeMath.sub(balance, TX.inputs[counter].amount);
+                balance = SafeMath.sub(balance, TX.outputs[counter].amount);
             }
             if (balance != 0) {
                 return false;

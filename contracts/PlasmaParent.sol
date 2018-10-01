@@ -79,7 +79,7 @@ contract PlasmaParent {
     event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _partialHash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
-    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _inputNumber);
+    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _challengeNumber, uint8 _inputNumber);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
     event ExitBuyoutAccepted(bytes22 indexed _partialHash, address indexed _from);    
 // end of storage declarations --------------------------- 
@@ -252,6 +252,7 @@ contract PlasmaParent {
     public returns(bool success) {
         StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_exitRecordHash];
         require(exitRecord.isValid);
+        require(!exitRecord.isLimbo);
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
         PlasmaTransactionLibrary.TransactionInput memory txInput = TX.inputs[_inputNumber];
         require(txInput.blockNumber == exitRecord.blockNumber);
@@ -276,6 +277,7 @@ contract PlasmaParent {
     public returns (bool success) {
         StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_exitRecordHash];
         require(exitRecord.isValid);
+        require(!exitRecord.isLimbo);
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
         require(exitRecord.transactionRef == keccak256(_originalTransaction));
         PlasmaTransactionLibrary.PlasmaTransaction memory originalTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_originalTransaction);
@@ -312,6 +314,7 @@ contract PlasmaParent {
     public returns (bool success) {
         StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_exitRecordHash];
         require(exitRecord.isValid);
+        require(!exitRecord.isLimbo);
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = checkForValidityAndInclusion(_plasmaBlockNumber, _plasmaTransaction, _merkleProof);
         require(exitRecord.transactionRef == keccak256(_originalTransaction));
         PlasmaTransactionLibrary.PlasmaTransaction memory originalTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_originalTransaction);
@@ -395,7 +398,7 @@ contract PlasmaParent {
                 continue;
             }
             beneficiary = output.owner;
-            amount = output.amount;
+            amount = output.amount + WithdrawCollateral;
             delete limboData.outputs[i];
             // we use send so some malicious contract does not stop the queue from exiting
             beneficiary.send(amount);
@@ -440,7 +443,7 @@ contract PlasmaParent {
                 balance = SafeMath.add(balance, TX.inputs[counter].amount);
             }
             for (counter = 0; counter < TX.outputs.length; counter++) {
-                balance = SafeMath.sub(balance, TX.inputs[counter].amount);
+                balance = SafeMath.sub(balance, TX.outputs[counter].amount);
             }
             if (balance != 0) {
                 return false;

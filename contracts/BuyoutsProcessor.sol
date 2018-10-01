@@ -79,7 +79,7 @@ contract PlasmaBuyoutProcessor {
     event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _partialHash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
-    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _inputNumber);
+    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _challengeNumber, uint8 _inputNumber);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
     event ExitBuyoutAccepted(bytes22 indexed _partialHash, address indexed _from);    
 // end of storage declarations --------------------------- 
