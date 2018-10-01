@@ -8,3 +8,4 @@ node_modules
 !/build/abi
 build/details
 .node-*
+.node*
