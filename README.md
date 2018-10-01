@@ -69,7 +69,7 @@ All basic challenges and potential "cheats" for operator or user should be now c
     - [x] should NOT accept invalidly signed block header in sequence in one transaction
     - [x] should property update two weeks old block number
     - [x] should check block hashes match in addition to block numbers in sequence
-- [ ] Deposits
+- [x] Deposits
     - [x] should emit deposit event
     - [x] should allow deposit withdraw process
     - [x] should respond to deposit withdraw challenge
@@ -77,35 +77,29 @@ All basic challenges and potential "cheats" for operator or user should be now c
     - [x] should require bond for deposit withdraw start
     - [x] should stop Plasma on duplicate funding transaction
     - [x] should stop Plasma on funding without deposit
-    - [x] should update total deposited amount for all tests above
-    - [ ] should update amount pending exit for all tests above
-- [ ] Exits (normal process)
-    - [x] should start withdraw with proper proof
-    - [x] should not allow non-owner of transaction to start a withdraw of UTXO
+- [x] Normal exits
+    - [x] should start an exit with proper proof
+    - [x] should not allow non-owner of transaction to start a exit of UTXO
     - [x] should respond to withdraw challenge
     - [x] should allow successful withdraw
     - [x] should require bond for withdraw start 
-    - [ ] should return bond on successful withdraw
-    - [ ] should update amount pending withdraw for all tests above
-    - [ ] should update total amount deposited for all tests above
+    - [x] should return bond on successful withdraw
     - [x] should allow offer for buyout
     - [x] should allow accepting a buyout offer
     - [x] should allow returning funds for expired offer 
-- [ ] Limbo exits (when Plasma is stopped)
+    - [x] should allow to publish a pre-signed buyout agreement 
+- [x] Limbo exits
     - [x] should allow to start a limbo exit
-    - [x] should require a collateral for each input
-    - [ ] should allow to join a limbo exit
-    - [ ] should maintain priority in the queue
-    - [ ] should give the same priority for blocks that are older than 2 weeks
-    - [ ] should respond to exit prevention challenge
+    - [x] should allow to challenge an input using a bond
+    - [x] should allow to join a limbo exit (bond the output)
+    - [x] should maintain priority in the queue
+    - [x] should give the same priority for blocks that are older than 1 week
+    - [x] should allow to respond to the input challenge
+    - [x] should allow to stop exit by publishing an "input already included" message
+    - [x] should allow to stop exit by publishing a proof of mismatching UTXO -> input 
     - [x] should allow successful exit
-    - [ ] should update amount pending withdraw for all tests above
-    - [ ] should update total amount deposited for all tests above
-- [ ] Challenges
-    - [x] Invalid transaction in block (unrealisable)
-    - [x] should NOT stop on valid transaction (not malformed) in block
+- [x] Challenges
     - [x] Transaction in block references the future
-    - [x] Two transactions have the same number in block
     - [x] Transaction is malformed (balance breaking)
     - [x] Double spend
     - [x] Spend without owner signature
