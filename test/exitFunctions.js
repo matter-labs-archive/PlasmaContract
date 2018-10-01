@@ -101,7 +101,7 @@ contract('PlasmaParent', async (accounts) => {
                 const transactionPublishedEvent = submissionReceipt.logs[0]
                 const txHashFromEvent = transactionPublishedEvent.args._hash;
                 const txDataFromEvent = transactionPublishedEvent.args._data;
-                const exitRecordHash = submissionReceipt.logs[2].args._hash;
+                const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
                 const exitRecord = await plasma.exitRecords(exitRecordHash);
                 const txData = ethUtil.bufferToHex(tx.serialize())
                 const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -171,7 +171,7 @@ contract('PlasmaParent', async (accounts) => {
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txData = ethUtil.bufferToHex(tx.serialize())
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -252,7 +252,7 @@ contract('PlasmaParent', async (accounts) => {
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
-        let exitRecordHash = submissionReceipt.logs[2].args._hash;
+        let exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         let exitRecord = await plasma.exitRecords(exitRecordHash);
         const txData = ethUtil.bufferToHex(tx.serialize())
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -296,7 +296,7 @@ contract('PlasmaParent', async (accounts) => {
 
         console.log("Single challenge gas price for output being spent is " + submissionReceipt.receipt.gasUsed)
 
-        exitRecordHash = submissionReceipt.logs[0].args._hash;
+        exitRecordHash = submissionReceipt.logs[0].args._partialHash;
         exitRecord = await plasma.exitRecords(exitRecordHash);
 
         assert(exitRecord[0] === txHash);
@@ -362,7 +362,7 @@ contract('PlasmaParent', async (accounts) => {
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
-        let exitRecordHash = submissionReceipt.logs[2].args._hash;
+        let exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         let exitRecord = await plasma.exitRecords(exitRecordHash);
         const txData = ethUtil.bufferToHex(tx.serialize())
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -400,7 +400,7 @@ contract('PlasmaParent', async (accounts) => {
         )
         console.log("Single challenge gas price for input mismatch is " + submissionReceipt.receipt.gasUsed)
 
-        exitRecordHash = submissionReceipt.logs[0].args._hash;
+        exitRecordHash = submissionReceipt.logs[0].args._partialHash;
         exitRecord = await plasma.exitRecords(exitRecordHash);
 
         assert(exitRecord[0] === txHash);
@@ -479,7 +479,7 @@ contract('PlasmaParent', async (accounts) => {
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
-        let exitRecordHash = submissionReceipt.logs[2].args._hash;
+        let exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         let exitRecord = await plasma.exitRecords(exitRecordHash);
         const txData = ethUtil.bufferToHex(tx.serialize())
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -520,7 +520,7 @@ contract('PlasmaParent', async (accounts) => {
 
         console.log("Single challenge gas price for doublespent input is " + submissionReceipt.receipt.gasUsed)
 
-        exitRecordHash = submissionReceipt.logs[0].args._hash;
+        exitRecordHash = submissionReceipt.logs[0].args._partialHash;
         exitRecord = await plasma.exitRecords(exitRecordHash);
 
         assert(exitRecord[0] === txHash);

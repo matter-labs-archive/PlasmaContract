@@ -88,7 +88,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         const transactionPublishedEvent = submissionReceipt.logs[0]
         const txHashFromEvent = transactionPublishedEvent.args._hash;
         const txDataFromEvent = transactionPublishedEvent.args._data;
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txData = ethUtil.bufferToHex(tx.serialize())
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -159,7 +159,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         const txDataFromEvent = transactionPublishedEvent.args._data;
         const alicePriority = submissionReceipt.logs[1].args._priority;
 
-        let exitRecordHash = submissionReceipt.logs[2].args._hash;
+        let exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         let exitRecord = await plasma.exitRecords(exitRecordHash);
         let txData = ethUtil.bufferToHex(tx.serialize())
         let txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
@@ -200,7 +200,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
             exitRecordHash, 2, ethUtil.bufferToHex(tx.serialize()), ethUtil.bufferToHex(proof), 0
         )
 
-        exitRecordHash = submissionReceipt.logs[0].args._hash;
+        exitRecordHash = submissionReceipt.logs[0].args._partialHash;
         exitRecord = await plasma.exitRecords(exitRecordHash);
         const aliceHash = exitRecordHash;
         assert(exitRecord[0] === txHash);
@@ -218,7 +218,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         submissionReceipt = await plasma.startExit( 2, 0, ethUtil.bufferToHex(tx.serialize()), ethUtil.bufferToHex(proof),
             {from: bob, value: withdrawCollateral});
 
-        exitRecordHash = submissionReceipt.logs[2].args._hash;
+        exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         exitRecord = await plasma.exitRecords(exitRecordHash);
         const bobPriority = submissionReceipt.logs[1].args._priority;
 

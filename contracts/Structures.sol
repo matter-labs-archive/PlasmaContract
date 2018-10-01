@@ -38,14 +38,6 @@ library StructuresLibrary {
         return bytes22(keccak256(abi.encodePacked(self.transactionRef, self.blockNumber, self.transactionNumber, self.outputNumber, self.isLimbo)));
     }
     
-    function getChallenge(LimboData self, uint8 challengeNumber) internal pure returns(LimboInputChallenge memory challenge) {
-        challenge = self.inputChallenges[challengeNumber];
-    }
-
-    function resolveChallenge(LimboData storage self, uint8 challengeNumber) internal  {
-        self.inputChallenges[challengeNumber].resolved = true;
-    }
-
     function isFullyResolved(LimboData storage self) internal view returns (bool resolved) {
         for (uint8 i = 0; i < self.inputChallenges.length; i++) {
             if (self.inputChallenges[i].resolved == false) {
@@ -55,11 +47,11 @@ library StructuresLibrary {
         return true;
     }
 
-    function addOutput(LimboData storage self, address _owner, uint256 _amount) internal {
+    function addOutput(LimboData storage self, address _owner, uint256 _amount, bool _pegged) internal {
         LimboOutput memory newOutput;
         newOutput.owner = _owner;
         newOutput.amount = _amount;
-        newOutput.isPegged = true;
+        newOutput.isPegged = _pegged;
         self.outputs.push(newOutput);
     }
 }

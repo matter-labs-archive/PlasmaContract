@@ -25,9 +25,8 @@ contract PlasmaChallenges {
     uint256 public constant DepositWithdrawCollateral = 50000000000000000;
     uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
-    uint256 public constant InputChallangesDelay = (72 hours);
-    uint256 public constant OutputChallangesDelay = (72 hours);
-    uint256 public constant ExitDelay = (144 hours);
+    uint256 public constant LimboChallangesDelay = (72 hours);
+    uint256 public constant ExitDelay = (168 hours);
 
     uint256 constant TxTypeNull = 0;
     uint256 constant TxTypeSplit = 1;
@@ -74,12 +73,13 @@ contract PlasmaChallenges {
     event DepositWithdrawCompletedEvent(uint256 indexed _depositIndex);
 
     event TransactionPublished(bytes32 indexed _hash, bytes _data);
-    event ExitRecordCreated(bytes22 indexed _hash);
-    event ExitChallenged(bytes22 indexed _hash);
+    event ExitRecordCreated(bytes22 indexed _partialHash);
+    event ExitChallenged(bytes22 indexed _partialHash);
     event TransactionIsPublished(uint64 indexed _index);
-    event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _hash);
+    event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _partialHash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
+    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _inputNumber);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
     event ExitBuyoutAccepted(bytes22 indexed _partialHash, address indexed _from);    
 // end of storage declarations --------------------------- 
@@ -392,11 +392,7 @@ contract PlasmaChallenges {
         PlasmaTransactionLibrary.PlasmaTransaction memory _originatingTX,
         uint32 _originatingPlasmaBlockNumber,
         uint256 _inputNumber) 
-    internal view returns (bool isValid) {
-
-        // require(isWellFormedDecodedTransaction(_spendingTX));
-        // require(isWellFormedDecodedTransaction(_originatingTX));
-
+    internal pure returns (bool isValid) {
         PlasmaTransactionLibrary.TransactionInput memory input = _spendingTX.inputs[_inputNumber];
         require(input.blockNumber == _originatingPlasmaBlockNumber);
         require(input.txNumberInBlock == _originatingTX.txNumberInBlock);
@@ -446,7 +442,7 @@ contract PlasmaChallenges {
         uint256 balance = 0;
         uint256 counter = 0;
         if (TX.txType == TxTypeFund) {
-            if (TX.inputs.length != 1) {
+            if (TX.inputs.length != 1 || TX.outputs.length != 1) {
                 return false;
             }
             PlasmaTransactionLibrary.TransactionInput memory input = TX.inputs[0];

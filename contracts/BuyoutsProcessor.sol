@@ -25,9 +25,8 @@ contract PlasmaBuyoutProcessor {
     uint256 public constant DepositWithdrawCollateral = 50000000000000000;
     uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
-    uint256 public constant InputChallangesDelay = (72 hours);
-    uint256 public constant OutputChallangesDelay = (72 hours);
-    uint256 public constant ExitDelay = (144 hours);
+    uint256 public constant LimboChallangesDelay = (72 hours);
+    uint256 public constant ExitDelay = (168 hours);
 
     uint256 constant TxTypeNull = 0;
     uint256 constant TxTypeSplit = 1;
@@ -74,12 +73,13 @@ contract PlasmaBuyoutProcessor {
     event DepositWithdrawCompletedEvent(uint256 indexed _depositIndex);
 
     event TransactionPublished(bytes32 indexed _hash, bytes _data);
-    event ExitRecordCreated(bytes22 indexed _hash);
-    event ExitChallenged(bytes22 indexed _hash);
+    event ExitRecordCreated(bytes22 indexed _partialHash);
+    event ExitChallenged(bytes22 indexed _partialHash);
     event TransactionIsPublished(uint64 indexed _index);
-    event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _hash);
+    event ExitStartedEvent(address indexed _from, uint72 _priority, uint72 indexed _index, bytes22 indexed _partialHash);
 
     event LimboExitStartedEvent(address indexed _from, uint72 indexed _priority, bytes22 indexed _partialHash);
+    event LimboExitChallengePublished(bytes22 indexed _partialHash, address indexed _from, uint8 _inputNumber);
     event ExitBuyoutOffered(bytes22 indexed _partialHash, address indexed _from, uint256 indexed _buyoutAmount);
     event ExitBuyoutAccepted(bytes22 indexed _partialHash, address indexed _from);    
 // end of storage declarations --------------------------- 

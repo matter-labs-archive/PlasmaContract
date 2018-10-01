@@ -73,7 +73,7 @@ contract('Plasma buyout procedure', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
 
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
@@ -151,7 +151,7 @@ contract('Plasma buyout procedure', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
 
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
@@ -242,7 +242,7 @@ contract('Plasma buyout procedure', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
 
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
@@ -317,7 +317,7 @@ contract('Plasma buyout procedure', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
 
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 
@@ -378,7 +378,7 @@ contract('Plasma buyout procedure', async (accounts) => {
             {from: alice, value: withdrawCollateral}
         )
 
-        const exitRecordHash = submissionReceipt.logs[2].args._hash;
+        const exitRecordHash = submissionReceipt.logs[2].args._partialHash;
         const exitRecord = await plasma.exitRecords(exitRecordHash);
         const txHash = ethUtil.bufferToHex(ethUtil.sha3(proofObject.tx.serialize()))
 

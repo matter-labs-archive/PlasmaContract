@@ -20,7 +20,7 @@ const {
     TxTypeMerge, 
     TxTypeSplit} = require("../lib/Tx/RLPtx.js");
 
-contract('PlasmaParent limbo exit procedure', async (accounts) => {
+contract('Plasma limbo exit procedure', async (accounts) => {
     return 
     const operatorAddress = accounts[0];
     const operatorKey = keys[0];
