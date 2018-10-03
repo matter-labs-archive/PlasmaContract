@@ -26,6 +26,7 @@ What is a Limbo exit procedure itself:
 - If by the time the transaction should leave the queue all challenges on the inputs are resolved, then bonded outputs exit
 - Otherwise transaction is deemed invalid and challengers have their bonds returned along with any output bonds evenly distributed
 
+An **important note** about limbo exiting through the input bonding - there is no procedure to exit the limbo transaction's input! If user believes that limbo exit is invalid and wants to challenge one of the inputs (so he has a data about UTXOs being spent!) - he should just challenge inputs to prevent an exit and do a limbo exit of the transaction that makes this UTXOs.
 
 ## Transaction structure
 
