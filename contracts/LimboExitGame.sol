@@ -312,7 +312,7 @@ contract PlasmaLimboExitGame {
         } else if (scratchSpace[1] == scratchSpace[0]) {
             // in case of equal priority let's resolve it through mining
             uint256 hashAsUInt256 = uint256(anotherTransactionHash);
-            require(hashAsUInt256 < (uint256(1) << 235));
+            require(hashAsUInt256 < (uint256(1) << 231));
             require(hashAsUInt256 < uint256(transactionHash));
         }
         exitRecord.isValid = false;
