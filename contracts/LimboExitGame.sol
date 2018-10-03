@@ -271,10 +271,10 @@ contract PlasmaLimboExitGame {
     ) public returns(bool success) {
         StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_index];
         bytes32 transactionHash = keccak256(_exitingTransaction);
+        bytes32 anotherTransactionHash = keccak256(_anotherLimboTransaction);
         require(exitRecord.transactionRef == transactionHash);
         require(exitRecord.isValid == true);
-        // not strictly necessary, but here for piece of mind
-        require(transactionHash != keccak256(_anotherLimboTransaction));
+        require(transactionHash != anotherTransactionHash);
         require(block.timestamp <= exitRecord.timePublished + LimboChallangesDelay);
         PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_exitingTransaction);
         PlasmaTransactionLibrary.PlasmaTransaction memory anotherTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_anotherLimboTransaction);
@@ -304,8 +304,51 @@ contract PlasmaLimboExitGame {
                 scratchSpace[1] = scratchSpace[3];
             }
         }
-        // priority of "another" tx should be smaller (so, better) than priority of the exiting TX
-        require(scratchSpace[1] < scratchSpace[0]);
+        // priority of "another" tx should be smaller or equal (so, better) than priority of the exiting TX
+        // equality is to prevent having another transaction that spends the same inputs 
+        // but has different outputs. This is user's problem not to make such transactions!
+        if (scratchSpace[1] > scratchSpace[0]) {
+            revert();
+        } else if (scratchSpace[1] == scratchSpace[0]) {
+            // in case of equal priority let's resolve it through mining
+            uint256 hashAsUInt256 = uint256(anotherTransactionHash);
+            require(hashAsUInt256 < (uint256(1) << 235));
+            require(hashAsUInt256 < uint256(transactionHash));
+        }
+        exitRecord.isValid = false;
+        payForLimboInputChallenge(_index, msg.sender);
+        return true;
+    }
+
+    function challengeLimboExitByShowingTransactionThatHasAlreadyExited(
+        bytes22 _index,
+        bytes _exitingTransaction,
+        bytes _anotherLimboTransaction,
+        uint8[2] _inputIndexes
+    ) public returns(bool success) {
+        StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_index];
+        bytes32 transactionHash = keccak256(_exitingTransaction);
+        bytes32 anotherTransactionHash = keccak256(_anotherLimboTransaction);
+        require(exitRecord.transactionRef == transactionHash);
+        require(exitRecord.isValid == true);
+        require(transactionHash != anotherTransactionHash);
+        require(block.timestamp <= exitRecord.timePublished + LimboChallangesDelay);
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_exitingTransaction);
+        PlasmaTransactionLibrary.PlasmaTransaction memory anotherTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_anotherLimboTransaction);
+        PlasmaTransactionLibrary.TransactionInput memory txInput = TX.inputs[_inputIndexes[0]];
+        PlasmaTransactionLibrary.TransactionInput memory anotherInput = anotherTX.inputs[_inputIndexes[1]];
+        // some inputs should be identical
+        require(anotherInput.blockNumber == txInput.blockNumber);
+        require(anotherInput.txNumberInBlock == txInput.txNumberInBlock);
+        require(anotherInput.outputNumberInTX == txInput.outputNumberInTX);
+        require(anotherInput.amount == txInput.amount);
+        require(TX.sender == anotherTX.sender);
+        StructuresLibrary.ExitRecord memory anotherExitRecord;
+        anotherExitRecord.transactionRef = anotherTransactionHash;
+        anotherExitRecord.isValid = true;
+        anotherExitRecord.isLimbo = true;
+        bytes22 anotherExitRecordHash = StructuresLibrary.getCompactExitRecordCommitment(anotherExitRecord);
+        require(succesfulExits[anotherExitRecordHash]);
         exitRecord.isValid = false;
         payForLimboInputChallenge(_index, msg.sender);
         return true;
