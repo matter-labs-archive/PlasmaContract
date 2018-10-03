@@ -1,6 +1,35 @@
 # Plasma Parent Contract
 
+## Description
+
+This contract is used to maintain the integrity and correctness of Plasma by providing deposits, exits and limbo exits mechanism. It's based on a construction called More Viable Plasma, where in case of exit a priority of the transaction in the exit queue (so, priority of all outputs of this transaction) is assigned as the "age of the yongest input". In case of this implementation age is determined as a big-endian number made from byte concatenation of `BlockNumber|TransactionNumber|OutputNumber` of the UTXO being spent by the input. So age is first determined by smalled block number, then smaller transaction number in block, and then smaller output number in transaction. Priority is determined as the largest age and lower is better. Priority for exit purposes is capped and can not be better (smaller) than the age of block at `-1 week` timestamp.
+
+To demonstrate why such priority is enough for proper limbo exit game (when block withholding happens and it's unknown what's happening in Plasma, so exits are done without a Merkle proof of inclusion in block) on can imagine a following situation:
+- An operator does something malicious in block number `N` (like spend someone's else UTXO without knowing a private key) and withholds a block, but still publishes a header
+- An operator can not start an exit directly from the block number `N` as he will be challenged by demonstrating a mismatch between transaction input and original UTXOs
+- So an operator will have to make another block `N+1` (and withhold it) to start exits from it. There he puts a transaction that references an invalid transaction that was produced in block number `N`
+- In this case a priority of malicious exiting transaction will be based on a block number `N`
+- Any valid transaction from users (that can not be trivially challenged, since full information for a blocks `< N` is available) would have it's inputs from block with a number `<N`, so will have higher priority
+- Through such procedure any user that would start an exit in timeframe of `1 week` (due to capped priority) after block `N` being committed to the smart-contract would exit normally
+
+What is a Limbo exit procedure itself:
+- User publishes a transaction without Merkle proof if inclusion
+- User puts a bond on one of the outputs as a demontration of intent to exit and not being affraid of challenges
+- Any other user can either challenge an exit or join it
+- To challenge it's possible:
+    - Put a bond on invalidity of a specific input. In this case an exitor would have to provide a full information about this input (by showing a transaction that has made the corresponding UTXO) or lose his bond
+    - Directly show invalidity of the transaction input by:
+        - Demonstrate that such input was already included in some transaction
+        - Demonstrate that such input mismatches a corresponding UTXO (in case of data availability) 
+        - Demonstrate that there exits some other transaction (no inclusion required) that has higher priority (uncapped)
+- To join an exit user can put a bond on yet unbonded output to add it to the exit process
+- If by the time the transaction should leave the queue all challenges on the inputs are resolved, then bonded outputs exit
+- Otherwise transaction is deemed invalid and challengers have their bonds returned along with any output bonds evenly distributed
+
+
 ## Transaction structure
+
+Here we briefly describe the transaction structure, that is largely just an UTXO model with explicit enumeration of UTXO in the inputs
 
 ### Input
 An RLP encoded set with the following items:
