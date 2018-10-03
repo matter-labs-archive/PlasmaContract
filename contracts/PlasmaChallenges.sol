@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import {PlasmaTransactionLibrary} from "./PlasmaTransactionLibrary.sol";
 import {PlasmaBlockStorageInterface} from "./PlasmaBlockStorage.sol";

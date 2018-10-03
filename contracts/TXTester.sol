@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import {PlasmaTransactionLibrary} from "./PlasmaTransactionLibrary.sol";
 
@@ -15,7 +15,7 @@ contract TXTester {
         return (TX.txNumberInBlock, TX.txType, TX.inputs.length, TX.outputs.length, TX.sender, TX.isWellFormed);
     }
 
-    function parseFromBlockLimited(bytes _plasmaTransaction, bytes _merkleProof, bytes32 _merkleRoot) pure returns (bool included, uint256 transactionNumber) {   
+    function parseFromBlockLimited(bytes _plasmaTransaction, bytes _merkleProof, bytes32 _merkleRoot) public pure returns (bool included, uint256 transactionNumber) {   
         (included, transactionNumber) = PlasmaTransactionLibrary.checkForInclusionIntoBlock(_merkleRoot, _plasmaTransaction, _merkleProof);
         return;
     }

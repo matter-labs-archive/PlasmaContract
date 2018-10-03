@@ -49,7 +49,6 @@ module.exports = function(deployer, network, accounts) {
 
         // await deployer.deploy(LimboExitGame, {from: operator});
         // let limboExitGame = await LimboExitGame.deployed();
-        // let limboExitGame = challenger; // for now
 
         await parent.allowDeposits(buyoutProcessor.address, {from: operator})
         await parent.allowChallenges(challenger.address, {from: operator});

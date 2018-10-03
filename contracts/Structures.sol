@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 library StructuresLibrary {
     struct ExitRecord {
@@ -15,6 +15,8 @@ library StructuresLibrary {
         bool isValid;
         bool isLimbo;
         // 96 + 7 bytes
+        // uint72 priority;
+        // 96 + 16 bytes
     }
 
     struct LimboData {

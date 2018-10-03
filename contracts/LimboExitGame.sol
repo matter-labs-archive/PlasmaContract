@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.4.25;
 
 import {PlasmaTransactionLibrary} from "./PlasmaTransactionLibrary.sol";
 import {PlasmaBlockStorageInterface} from "./PlasmaBlockStorage.sol";
@@ -127,6 +127,7 @@ contract PlasmaLimboExitGame {
         exitRecord.timePublished = uint64(block.timestamp);
         exitRecord.isValid = true;
         exitRecord.isLimbo = true;
+        // exitRecord.priority = scratchSpace[0];
         bytes22 exitRecordHash = StructuresLibrary.getCompactExitRecordCommitment(exitRecord);
         require(exitRecords[exitRecordHash].transactionRef == bytes32(0));
         exitRecords[exitRecordHash] = exitRecord;
@@ -262,6 +263,54 @@ contract PlasmaLimboExitGame {
         return true;
     }
 
+    function challengeLimboExitByShowingTransactionWithHigherPriority(
+        bytes22 _index,
+        bytes _exitingTransaction,
+        bytes _anotherLimboTransaction,
+        uint8[2] _inputIndexes
+    ) public returns(bool success) {
+        StructuresLibrary.ExitRecord storage exitRecord = exitRecords[_index];
+        bytes32 transactionHash = keccak256(_exitingTransaction);
+        require(exitRecord.transactionRef == transactionHash);
+        require(exitRecord.isValid == true);
+        // not strictly necessary, but here for piece of mind
+        require(transactionHash != keccak256(_anotherLimboTransaction));
+        require(block.timestamp <= exitRecord.timePublished + LimboChallangesDelay);
+        PlasmaTransactionLibrary.PlasmaTransaction memory TX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_exitingTransaction);
+        PlasmaTransactionLibrary.PlasmaTransaction memory anotherTX = PlasmaTransactionLibrary.signedPlasmaTransactionFromBytes(_anotherLimboTransaction);
+        PlasmaTransactionLibrary.TransactionInput memory txInput = TX.inputs[_inputIndexes[0]];
+        PlasmaTransactionLibrary.TransactionInput memory anotherInput = anotherTX.inputs[_inputIndexes[1]];
+        // some inputs should be identical
+        require(anotherInput.blockNumber == txInput.blockNumber);
+        require(anotherInput.txNumberInBlock == txInput.txNumberInBlock);
+        require(anotherInput.outputNumberInTX == txInput.outputNumberInTX);
+        require(anotherInput.amount == txInput.amount);
+        require(TX.sender == anotherTX.sender);
+        uint72[] memory scratchSpace = new uint72[](4); 
+        // scratchSpace[0] is for exiting TX
+        // scratchSpace[1] is for another TX
+        // recalculate priorities as even if we store those, it'll be stored "capped" (up to -1 week)
+        for (scratchSpace[2] = 0; scratchSpace[2] < TX.inputs.length; scratchSpace[1]++) {
+            txInput = TX.inputs[scratchSpace[2]];
+            scratchSpace[3] = PlasmaTransactionLibrary.makeInputOrOutputIndex(txInput.blockNumber, txInput.txNumberInBlock, txInput.outputNumberInTX);
+            if (scratchSpace[0] < scratchSpace[3]) {
+                scratchSpace[0] = scratchSpace[3];
+            }
+        }
+        for (scratchSpace[2] = 0; scratchSpace[2] < anotherTX.inputs.length; scratchSpace[1]++) {
+            anotherInput = TX.inputs[scratchSpace[2]];
+            scratchSpace[3] = PlasmaTransactionLibrary.makeInputOrOutputIndex(anotherInput.blockNumber, anotherInput.txNumberInBlock, anotherInput.outputNumberInTX);
+            if (scratchSpace[1] < scratchSpace[3]) {
+                scratchSpace[1] = scratchSpace[3];
+            }
+        }
+        // priority of "another" tx should be smaller (so, better) than priority of the exiting TX
+        require(scratchSpace[1] < scratchSpace[0]);
+        exitRecord.isValid = false;
+        payForLimboInputChallenge(_index, msg.sender);
+        return true;
+    }
+
     function payForLimboInputChallenge(
         bytes22 _index,
         address _to
@@ -307,10 +356,10 @@ contract PlasmaLimboExitGame {
     function limboExitsDataOutput(
         bytes22 _exitIndex,
         uint8 _outputIndex
-    ) view public returns (uint256 amount, address owner, bool isPegged) {
+    ) view public returns (uint256 amount, address outputOwner, bool isPegged) {
         StructuresLibrary.LimboOutput storage limboOutput = limboExitsData[_exitIndex].outputs[_outputIndex];
         amount = limboOutput.amount;
-        owner = limboOutput.owner;
+        outputOwner = limboOutput.owner;
         isPegged = limboOutput.isPegged;
     }
 
