@@ -15,7 +15,7 @@ library StructuresLibrary {
         bool isValid;
         bool isLimbo;
         // 96 + 7 bytes
-        // uint72 priority;
+        uint72 priority;
         // 96 + 16 bytes
     }
 

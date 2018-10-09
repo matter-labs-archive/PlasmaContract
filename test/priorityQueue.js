@@ -20,7 +20,7 @@ const {
     TxTypeMerge, 
     TxTypeSplit} = require("../lib/Tx/RLPtx.js");
 
-contract('Transaction deserialization tester', async (accounts) => {
+contract('Priority queue', async (accounts) => {
     let priorityQueue;
 
     const operator = accounts[0];
@@ -70,6 +70,56 @@ contract('Transaction deserialization tester', async (accounts) => {
         assert(size.toString(10) === "2");
         let minimalItem = await priorityQueue.getMin();
         assert(minimalItem == hash);
+    });
+
+
+    // not usable for heap queue
+    // it('should insert many items and find position', async () => {
+    //     let maxSize = 100
+    //     let mod = new BN(maxSize/2);
+    //     let p;
+    //     let h;
+    //     for (let i = 0; i < maxSize; i++) {
+    //         let priority = new BN(crypto.randomBytes(1));
+    //         let hash = ethUtil.bufferToHex(crypto.randomBytes(exitPartialHashSize));
+    //         await priorityQueue.insert([priority], hash);
+    //         if (i == maxSize/2) {
+    //             p = priority
+    //             h = hash
+    //         }
+    //     }
+    //     let size = await priorityQueue.currentSize();
+    //     assert(size.toString(10) === "" + maxSize);
+    //     let position = await priorityQueue.getEstimateQueuePositionForPriority([p]);
+    //     let item = await priorityQueue.heapList(position)
+    //     assert(item[0].toNumber() >= p.toNumber())
+    //     // assert(item[0].toString(10) === p.toString(10))
+    //     // assert(item[1] === h);
+    // });
+
+    it('should insert many items and pop with checking priority', async () => {
+        let maxSize = 100
+        let mod = new BN(maxSize/2);
+        let p;
+        let h;
+        for (let i = 0; i < maxSize; i++) {
+            let priority = new BN(crypto.randomBytes(1));
+            let hash = ethUtil.bufferToHex(crypto.randomBytes(exitPartialHashSize));
+            await priorityQueue.insert([priority], hash);
+            if (i == maxSize/2) {
+                p = priority
+                h = hash
+            }
+        }
+        let size = await priorityQueue.currentSize();
+        assert(size.toString(10) === "" + maxSize);
+        let prevPrior = 0
+        for (let i = 0; i < maxSize; i++) {
+            let item = await priorityQueue.heapList(1);
+            assert(item[0].toNumber() >= prevPrior);
+            prevPrior = item[0].toNumber();
+            await priorityQueue.delMin()
+        }
     });
 
     // it('should insert many items into queue with the same priority', async () => {

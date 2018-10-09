@@ -127,7 +127,7 @@ contract PlasmaLimboExitGame {
         exitRecord.timePublished = uint64(block.timestamp);
         exitRecord.isValid = true;
         exitRecord.isLimbo = true;
-        // exitRecord.priority = scratchSpace[0];
+        exitRecord.priority = scratchSpace[0];
         bytes22 exitRecordHash = StructuresLibrary.getCompactExitRecordCommitment(exitRecord);
         require(exitRecords[exitRecordHash].transactionRef == bytes32(0));
         exitRecords[exitRecordHash] = exitRecord;

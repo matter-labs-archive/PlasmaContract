@@ -230,6 +230,7 @@ contract PlasmaParent {
         exitRecord.transactionNumber = TX.txNumberInBlock;
         exitRecord.outputNumber = _outputNumber;
         exitRecord.isValid = true;
+        exitRecord.priority = scratchSpace[0];
         bytes22 exitRecordHash = StructuresLibrary.getCompactExitRecordCommitment(exitRecord);
         require(exitRecords[exitRecordHash].transactionRef == bytes32(0));
         exitRecords[exitRecordHash] = exitRecord;
