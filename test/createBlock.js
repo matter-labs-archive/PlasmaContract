@@ -1,4 +1,4 @@
-const Block = require("../lib/Block/RLPblock");
+const {Block} = require("../lib/Block/RLPblock");
 const ethUtil = require("ethereumjs-util");
 const BN = ethUtil.BN;
 const MerkleTools = require("../lib/merkle-tools");

@@ -143,38 +143,6 @@ contract PlasmaParent {
 
     }
 
-// ----------------------------------
-
-// // Deposit related functions
-
-//     function deposit() payable public returns (bool success) {
-//         return depositFor(msg.sender);
-//     }
-
-//     function depositFor(address _for) payable public returns (bool success) {
-//         require(msg.value > 0);
-//         require(!plasmaErrorFound);
-//         uint256 size;
-//         assembly {
-//             size := extcodesize(_for)
-//         }
-//         if (size > 0) {
-//             revert("No deposits to the contracts!");
-//         }
-//         uint256 depositIndex = depositCounter;
-//         DepositRecord storage record = depositRecords[depositIndex];
-//         require(record.status == DepositStatusNoRecord);
-//         record.from = _for;
-//         record.amount = msg.value;
-//         record.status = DepositStatusDeposited;
-//         depositCounter = depositCounter + 1;
-//         emit DepositEvent(_for, msg.value, depositIndex);
-//         allDepositRecordsForUser[_for].push(depositIndex);
-//         return true;
-//     }
-
-// ----------------------------------
-
     function startExit (
         uint32 _plasmaBlockNumber, // block with the transaction
         uint8 _outputNumber,    // output being exited
