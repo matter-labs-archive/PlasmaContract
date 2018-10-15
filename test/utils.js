@@ -1,5 +1,5 @@
 const util = require("util");
-const Block = require("../lib/Block/RLPblock");
+const {Block} = require("../lib/Block/RLPblock");
 const ethUtil = require('ethereumjs-util');
 
 module.exports = {
