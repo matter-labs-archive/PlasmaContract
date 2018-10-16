@@ -149,18 +149,17 @@ contract PlasmaParent {
     }
 
     /** @dev Starts a normal (non-limbo) exit. Requires a proof of inclusion for transaction that creates an exiting UTXO
-      * @param _plasmaBlockNumber Block number in which transaction was included
-      * @param _outputNumber Output number in the transaction 
+      * @param _plasmaBlockNumber Block number in which exiting transaction was included
+      * @param _outputNumber Exiting output number in the transaction 
       * @param _plasmaTransaction Serialized transaction itself 
       * @param _merkleProof Merkle proof that this transaction was included in a block. Proof determines a transaction number 
       * @return success Always true.
       */
-
     function startExit (
-        uint32 _plasmaBlockNumber, // block with the transaction
-        uint8 _outputNumber,    // output being exited
-        bytes _plasmaTransaction, // transaction itself
-        bytes _merkleProof) // proof
+        uint32 _plasmaBlockNumber,
+        uint8 _outputNumber,
+        bytes _plasmaTransaction,
+        bytes _merkleProof)
     public payable adjustsTime returns(bool success) {
         require(msg.value == WithdrawCollateral);
         // first parse the transaction and check basic validity rules
@@ -225,9 +224,18 @@ contract PlasmaParent {
         return true;
     }
 
+
+    /** @dev Challenges an exit by showing a transaction that (a) was included in a block, (b) spends the exiting UTXO
+      * @param _exitRecordHash Exit record identifier for an exiting transaction
+      * @param _plasmaBlockNumber Block number in which spending transaction was included
+      * @param _plasmaTransaction Serialized transaction itself 
+      * @param _merkleProof Merkle proof that this transaction was included in a block
+      * @param _inputNumber Input number that spends the exiting output
+      * @return success Always true.
+      */
     function challengeNormalExitByShowingExitBeingSpent(
         bytes22 _exitRecordHash,
-        uint32 _plasmaBlockNumber, //references and proves ownership on withdraw transaction
+        uint32 _plasmaBlockNumber,
         bytes _plasmaTransaction,
         bytes _merkleProof,
         uint8 _inputNumber) 
@@ -248,6 +256,17 @@ contract PlasmaParent {
         return true;
     }
 
+    /** @dev Challenges an exit by showing an exiting transaction and some another preceeding transaction spend the same output (so, have the same input).
+    Transaction used as a challenge mush have either lower block number or lower transaction number in block
+      * @param _originalTransaction Original TX that produced an output being exited
+      * @param _originalInputNumber Input number in question in the original TX      
+      * @param _exitRecordHash Exit record identifier for an exiting transaction
+      * @param _plasmaBlockNumber Block number in which another transaction spending the same output was included
+      * @param _plasmaTransaction Serialized second transaction itself 
+      * @param _merkleProof Merkle proof that second transaction was included in a block
+      * @param _inputNumber Input number the the second transaction that spends the same output as one of the inputs in original transaction
+      * @return success Always true.
+      */
     function challengeNormalExitByShowingAnInputDoubleSpend(
         bytes _originalTransaction,
         uint8 _originalInputNumber,
