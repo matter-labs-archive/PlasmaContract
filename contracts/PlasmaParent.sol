@@ -1,3 +1,8 @@
+/*
+This contract is a head of the chain. It's responsible for the most crucial functions such as 
+starting a normal (not limbo) exits and processing them from the queue
+*/
+
 pragma solidity ^0.4.25;
 
 import {PlasmaTransactionLibrary} from "./PlasmaTransactionLibrary.sol";
@@ -22,7 +27,7 @@ contract PlasmaParent {
 
     uint256 public depositCounter;
 
-    uint256 public constant DepositWithdrawCollateral = 50000000000000000;
+    uint256 public constant DepositWithdrawCollateral = 50000000000000000; // 0.05 ETH. Average challenge is 150k gas, so gas prices below 300gWei are ok
     uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
     uint256 public constant LimboChallangesDelay = (72 hours);
@@ -142,6 +147,14 @@ contract PlasmaParent {
     function incrementWeekOldCounter() public adjustsTime {
 
     }
+
+    /** @dev Starts a normal (non-limbo) exit. Requires a proof of inclusion for transaction that creates an exiting UTXO
+      * @param _plasmaBlockNumber Block number in which transaction was included
+      * @param _outputNumber Output number in the transaction 
+      * @param _plasmaTransaction Serialized transaction itself 
+      * @param _merkleProof Merkle proof that this transaction was included in a block. Proof determines a transaction number 
+      * @return success Always true.
+      */
 
     function startExit (
         uint32 _plasmaBlockNumber, // block with the transaction
@@ -310,6 +323,7 @@ contract PlasmaParent {
             bytes22 index = exitQueue.delMin();
             result = attemptExit(index);
             if (!result) {
+                // false is returned only for not-matured exits
                 if (i == 0) {
                     revert(); // save some gas
                 } else {

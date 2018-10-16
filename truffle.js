@@ -1,10 +1,27 @@
 const env = process.env;
-
 // don't load .env file in prod
 
 module.exports = {
     networks: {
-	    mainnet: {
+        mainnet: {
+            provider: function() {
+                if (env.NODE_ENV !== 'production') {
+                    require('dotenv').load();
+                }
+                let WalletProvider = require("truffle-wallet-provider");
+                let NonceTrackerSubprovider = require("web3-provider-engine/subproviders/nonce-tracker");
+                let walletEth = require('ethereumjs-wallet').fromPrivateKey(Buffer.from(env.ETH_KEY, 'hex'));
+                let wallet = new WalletProvider(walletEth, "https://mainnet.infura.io/" + env.INFURA_TOKEN)
+                let nonceTracker = new NonceTrackerSubprovider()
+                wallet.engine._providers.unshift(nonceTracker)
+                nonceTracker.setEngine(wallet.engine)
+                return wallet
+            },
+            network_id: 1,
+            gasPrice: 5000000000
+            // gas: 7000000,
+        },
+	    mainnet2: {
 		    provider: function() {
                 if (env.NODE_ENV !== 'production') {
                     require('dotenv').load();
