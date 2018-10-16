@@ -99,17 +99,10 @@ contract('Priority queue', async (accounts) => {
 
     it('should insert many items and pop with checking priority', async () => {
         let maxSize = 100
-        let mod = new BN(maxSize/2);
-        let p;
-        let h;
         for (let i = 0; i < maxSize; i++) {
             let priority = new BN(crypto.randomBytes(1));
             let hash = ethUtil.bufferToHex(crypto.randomBytes(exitPartialHashSize));
             await priorityQueue.insert([priority], hash);
-            if (i == maxSize/2) {
-                p = priority
-                h = hash
-            }
         }
         let size = await priorityQueue.currentSize();
         assert(size.toString(10) === "" + maxSize);
@@ -121,106 +114,4 @@ contract('Priority queue', async (accounts) => {
             await priorityQueue.delMin()
         }
     });
-
-    // it('should insert many items into queue with the same priority', async () => {
-    //     let priority = (new BN(2)).ushln(192).add(new BN(1));
-    //     let submissionReceipt = await priorityQueue.insert([priority]);
-    //     let size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "1");
-    //     priority = (new BN(1)).ushln(192).add(new BN(2));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "2");
-    //     priority = (new BN(1)).ushln(192).add(new BN(3));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "3");
-    //     let minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "2");
-    // });
-
-    // it('should insert many items into queue with the same priority and than pop one by one', async () => {
-    //     let priority = (new BN(4)).ushln(192).add(new BN(3));
-    //     let submissionReceipt = await priorityQueue.insert([priority]);
-    //     let size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "1");
-    //     priority = (new BN(2)).ushln(192).add(new BN(2));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "2");
-    //     priority = (new BN(2)).ushln(192).add(new BN(1));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "3");
-    //     let minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "2");
-    //     let poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "2");
-    //     minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "1");
-    //     poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "1");
-    //     minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "3");
-    //     poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "0");
-    //     await expectThrow(priorityQueue.delMin());
-    // });
-
-
-    // it('should insert many items into queue with the same priority and than pop one by one 2', async () => {
-    //     let priority = (new BN(4)).ushln(192).add(new BN(3));
-    //     let submissionReceipt = await priorityQueue.insert([priority]);
-    //     let size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "1");
-    //     priority = (new BN(2)).ushln(192).add(new BN(2));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "2");
-    //     priority = (new BN(2)).ushln(192).add(new BN(1));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "3");
-    //     priority = (new BN(1)).ushln(192).add(new BN(10000));
-    //     submissionReceipt = await priorityQueue.insert([priority]);
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "4");
-        
-    //     let minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "10000");
-    //     let poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "3");
-    //     minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "1");
-    //     poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "2");
-    //     minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "2");
-    //     poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     size = await priorityQueue.currentSize();
-    //     assert(size.toString(10) === "1");
-    //     minimalItem = await priorityQueue.getMin();
-    //     assert(minimalItem.toString(10) === "3");
-    //     poppedMin = await priorityQueue.delMin.call();
-    //     assert(poppedMin.eq(minimalItem))
-    //     await priorityQueue.delMin();
-    //     await expectThrow(priorityQueue.delMin());
-    // });
 })

@@ -27,7 +27,7 @@ contract PlasmaParent {
 
     uint256 public depositCounter;
 
-    uint256 public constant DepositWithdrawCollateral = 50000000000000000; // 0.05 ETH. Average challenge is 150k gas, so gas prices below 300gWei are ok
+    uint256 public constant DepositWithdrawCollateral = 50000000000000000; // 0.05 ETH. Max challenge is 161k gas, so gas prices below 300GWei are ok
     uint256 public constant WithdrawCollateral = 50000000000000000;
     uint256 public constant DepositWithdrawDelay = (72 hours);
     uint256 public constant LimboChallangesDelay = (72 hours);
@@ -335,11 +335,9 @@ contract PlasmaParent {
     }
 
     function finalizeExits(uint256 _numOfExits) public returns (bool success) {
-        uint256 toSend = 0;
-        address beneficiary = address(0);
         bool result = false;
         for (uint i = 0; i < _numOfExits; i++) {
-            bytes22 index = exitQueue.delMin();
+            bytes22 index = exitQueue.getMin();
             result = attemptExit(index);
             if (!result) {
                 // false is returned only for not-matured exits
@@ -348,13 +346,11 @@ contract PlasmaParent {
                 } else {
                     break; // priority did not mature
                 }
+            } else {
+                exitQueue.delMin();
             }
             delete exitRecords[index];
-            if (exitQueue.currentSize() > 0) {
-                toSend = 0;
-                beneficiary = address(0);
-                result = false;
-            } else {
+            if (exitQueue.currentSize() == 0) {
                 break;
             }
         }
@@ -366,6 +362,8 @@ contract PlasmaParent {
         if (!exitRecord.isValid) {
             return true;
         }
+        // prevent re-entrancy
+        require(!succesfulExits[_index]);
         if (exitRecord.timePublished + ExitDelay > block.timestamp) {
             return false;
         }
