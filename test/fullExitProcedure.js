@@ -357,6 +357,8 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         assert(exitRecord[7] === true)
         assert(exitRecord[8] === false)
         
+        await expectThrow(plasma.finalizeExits(100));
+
         await increaseTime(Math.floor(exitDelay.toNumber()/2) + 100)
 
         let oldBalanceAlice = await web3.eth.getBalance(alice);
@@ -369,6 +371,7 @@ contract('PlasmaParent exit procedure', async (accounts) => {
         assert(minimalItem === aliceHash);
 
         submissionReceipt = await plasma.finalizeExits(100);
+        await expectThrow(plasma.finalizeExits(100));
         let newBalanceAlice = await web3.eth.getBalance(alice);
         let newBalanceBob = await web3.eth.getBalance(bob);
         assert(newBalanceAlice.gt(oldBalanceAlice));

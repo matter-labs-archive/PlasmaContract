@@ -452,5 +452,11 @@ contract PlasmaLimboExitGame {
         return false;
     }
 
+// ---------------------
+
+    function() external payable{
+        revert();
+    }
+
 }
 
