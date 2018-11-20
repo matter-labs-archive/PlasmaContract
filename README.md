@@ -1,5 +1,28 @@
 # Plasma Parent Contract
 
+<!-- toc -->
+
+- [Description](#description)
+- [Transaction structure](#transaction-structure)
+  * [Input](#input)
+  * [Output](#output)
+  * [Transaction](#transaction)
+  * [Signed transaction](#signed-transaction)
+- [Block structure](#block-structure)
+  * [Block header](#block-header)
+  * [Block](#block)
+- [This contract differs from Minimal Viable Plasma in the following:](#this-contract-differs-from-minimal-viable-plasma-in-the-following)
+- [Implemented functionality:](#implemented-functionality)
+- [List of intended challenges and tests](#list-of-intended-challenges-and-tests)
+- [Getting started](#getting-started)
+  * [Download dependecies:](#download-dependecies)
+- [Contribution](#contribution)
+- [Authors](#authors)
+- [Further work](#further-work)
+- [License](#license)
+
+<!-- tocstop -->
+
 ## Description
 
 This contract is used to maintain the integrity and correctness of Plasma by providing deposits, exits and limbo exits mechanism. It's based on a construction called More Viable Plasma, where in case of exit a priority of the transaction in the exit queue (so, priority of all outputs of this transaction) is assigned as the "age of the yongest input". In case of this implementation age is determined as a big-endian number made from byte concatenation of `BlockNumber|TransactionNumber|OutputNumber` of the UTXO being spent by the input. So age is first determined by smalled block number, then smaller transaction number in block, and then smaller output number in transaction. Priority is determined as the largest age and lower is better. Priority for exit purposes is capped and can not be better (smaller) than the age of block at `-1 week` timestamp.
@@ -30,7 +53,7 @@ An **important note** about limbo exiting through the input bonding - there is n
 
 ## Transaction structure
 
-Here we briefly describe the transaction structure, that is largely just an UTXO model with explicit enumeration of UTXO in the inputs
+The transaction structure, that is used in The Matter Plasma Implementation is the UTXO model with explicit enumeration of UTXOs in the inputs.
 
 ### Input
 An RLP encoded set with the following items:
@@ -60,6 +83,8 @@ An RLP encoded set with the following items:
    3) S value, 32 bytes
 
 From this signature Plasma operator deduces a sender, checks that the sender is an owner of UTXOs referenced by inputs. Signature is based on EthereumPersonalHash(RLPEncode(Transaction)). Transaction should be well-formed, sum of inputs equal to sum of the outputs, etc 
+
+## Block structure
 
 ### Block header
 - Block number, 4 bytes, used in the main chain to double check proper ordering
