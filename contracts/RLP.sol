@@ -314,13 +314,11 @@ function toBytes32(RLPItem memory self) internal pure returns (bytes32 data, boo
 function toAddress(RLPItem memory self) internal pure returns (address data, bool valid) {
     if (!isData(self))
         return;
-    (uint256 rStartPos, uint256 len) = _decode(self);
-    if (len != 20)
+    (, uint256 len) = _decode(self);
+    if (len > 20)
         return;
-    assembly {
-        data := div(mload(rStartPos), exp(256, 12))
-    }
-    return (data, true);
+    (uint256 data, bool validUint) = toUint(self);
+    return (address(data), validUint);
 }
 
 // Get the payload offset.
